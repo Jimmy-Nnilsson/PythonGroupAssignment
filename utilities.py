@@ -1,8 +1,6 @@
 import requests
-from pathlib import Path
-from PIL import Image
-import os
-from io import BytesIO
+from datetime import datetime
+import sqlite3
 
 class MLModel():
     modelname = ["question_answering", "text_generator", "sentiment_analysis", "image_classifier"]
@@ -14,17 +12,24 @@ class MLModel():
         self.text = str
 
     def start(self):
-        endpoint= self.app + "/start/items/" + self.modeltype
-        self.modeltype = requests.get(url=endpoint)
+        selected_model = {"name" : self.modeltype}
+        endpoint= self.app + "/start/"
+        self.r = requests.post(url=endpoint, json=selected_model)
+        print(self.r.status_code)
 
 class MLTextGenerator(MLModel):
     def __init__(self, modeltype: str = "text_generator", app: str = "http://localhost:8000") -> None:
         super().__init__(modeltype=modeltype, app=app)
 
     def get_text_gen(self,text : str):
-        endpoint = (self.app + "/text_generation/items/" + text )
-        self.r = requests.get(url=endpoint)
+        context = {"context": text}
+        endpoint = (self.app + "/text_generation/" )
+        self.r = requests.post(url=endpoint, json=context)
         self._clean_text_gen()
+        return{"date": str(datetime.now()),
+        "modeltype": self.modeltype,
+        "context": text,
+        "result": self.r.text.split(":")[1][:-1]}
 
     def _clean_text_gen(self):
         modify = self.r.text[19:-2]
@@ -34,15 +39,6 @@ class MLTextGenerator(MLModel):
             newmodify = newmodify.replace('  ', ' ')
         self.text = newmodify
 
-class MLImageClassifier(MLModel):
-    def __init__(self, modeltype: str = "image_classifier", app: str = "http://localhost:8000") -> None:
-        self.endpoint = (app + "/classify_image/")
-        super().__init__(modeltype=modeltype, app=app)
-
-    def classify_image(self,file_path : str):
-        files = {'file': open(file_path, 'rb')}
-        self.r = requests.post(url=self.endpoint, files=files)
-        print(self.r.text)
 
 class MLSentimentAnalysis(MLModel):
     def __init__(self, modeltype: str = "sentiment_analysis", app: str = "http://localhost:8000") -> None:
@@ -50,16 +46,105 @@ class MLSentimentAnalysis(MLModel):
         super().__init__(modeltype=modeltype, app=app)
 
     def analyse_sentiment(self,text : str):
-        endpoint = (self.app + "/sentiment_analysis/items/" + text )
-        self.r = requests.get(url=endpoint)
-        print(self.r.text)
+        context = {"context": text}
+        endpoint = (self.app + "/sentiment_analysis/")
+        self.r = requests.post(url=endpoint, json=context)
+        result, score = self._format_text(self.r.text)
+        return{"date": str(datetime.now()),
+               "modeltype": self.modeltype,
+               "context": text,
+               "result": result,
+               "score": score}
+
+    def _format_text(self, text):
+        if "POSITIVE" in text:
+            result = "POSITIVE"
+        elif "NEGATIVE" in text:
+            result = "NEGATIVE"
+
+        score = text.split(":")[-1][:-1]
+        score
+        return result,score,
+
 
 class MLQA(MLModel):
-    def __init__(self, modeltype: str = "question_answering", app: str = "http://localhost:8000") -> None:
+    def __init__(self, modeltype: str = "question_answering",
+                       app: str = "http://localhost:8000") -> None:
         self.endpoint = (app + "/question_answering/")
         super().__init__(modeltype=modeltype, app=app)
 
     def question_answering(self, question : str, context : str):
-        endpoint = (self.app + "/qa/items/"+ question + "/" +context )
-        self.r = requests.get(url=endpoint)
-        print(self.r.text)
+        context_question = {"context": context, "question": question}
+        endpoint = (self.app + "/qa/")
+        self.r = requests.post(url=endpoint, json=context_question)
+        return{"date": str(datetime.now()),
+               "modeltype": self.modeltype,
+               "context": context,
+               "result": self.r.text.split(":")[1][:-8],
+               "score": self.r.text.split(":")[-1][:-1],
+               "question": question}
+
+class MLImageClassifier(MLModel):
+    def __init__(self, modeltype: str = "image_classifier", app: str = "http://localhost:8000") -> None:
+        self.endpoint = (app + "/classify_image/")
+        super().__init__(modeltype=modeltype, app=app)
+
+    def _change_classes(self, new_classes:dict):
+        r_class = requests.put(url=self.app + "/change_classes/", json=new_classes)
+        pass
+
+    def classify_image(self, file_path : str, classes : dict = {}):
+        if classes != {}:
+            self._change_classes(classes)
+        files = {'file': open(file_path, 'rb')}
+        self.r = requests.post(url=self.endpoint, files=files)
+        return{"date": str(datetime.now()),
+        "context" : file_path.split("/")[-1],
+        "modeltype": self.modeltype,
+        "result": self.r.text,
+        "image": self._create_blob(file_path)}
+
+    def _create_blob(self,filepath : str):
+        # Convert digital data to binary format
+        with open(filepath, 'rb') as file:
+            blobData = file.read()
+        return blobData
+
+class databaseDB():
+    def __init__(self, db_loc = '../data/dbgroup2.db') -> None:
+        self.db_loc = db_loc
+        self.db = sqlite3.Connection
+
+    def _connect(self):
+        self.db = sqlite3.connect(self.db_loc)
+        self.cursor = self.db.cursor()
+
+    def insert(self, command : dict):
+        self._connect()
+
+        columns = [a for a in command.keys()]
+        columns = ",".join(columns)
+        values = [":" + a for a in command.keys()]
+        values = ", ".join(values)
+        execute = f'''INSERT INTO model({columns})
+                    VALUES({values})'''
+        self.cursor.execute(execute,
+                            command)
+        self.db.commit()
+        self._disconnect()
+
+    def _disconnect(self):
+        self.db.close()
+
+    def find_tables(self):
+        self._connect()
+        self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = self.cursor.fetchall()
+        self._disconnect()
+        return tables
+
+def writeTofile(data, filename):
+    # Convert binary data to proper format and write it on Hard Disk
+    with open(filename, 'wb') as file:
+        file.write(data)
+    print("Stored blob data into: ", filename, "\n")
