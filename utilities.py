@@ -1,4 +1,5 @@
 import requests
+import streamlit as st
 from datetime import datetime
 import sqlite3
 import subprocess
@@ -165,3 +166,11 @@ def writeTofile(data, filename):
     with open(filename, 'wb') as file:
         file.write(data)
     print("Stored blob data into: ", filename, "\n")
+    
+a = MLSentimentAnalysis()
+a.start()
+
+result = a.analyse_sentiment("see_you")
+
+st.header("MLModel")
+st.text(result.get("result"))
