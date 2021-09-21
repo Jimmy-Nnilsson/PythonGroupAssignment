@@ -1,6 +1,5 @@
 import requests
 from datetime import datetime
-import sqlite3
 import subprocess
 import sys
 
@@ -60,108 +59,10 @@ class MLSentimentAnalysis(MLModel):
         context = {"context": text}
         endpoint = (self.app + "/sentiment_analysis/")
         self.r = requests.post(url=endpoint, json=context)
-        result, score = self._format_text(self.r.text)
+        result = dict(self.r.json())
         self.out = {"date": str(datetime.now()),
                     "modeltype": self.modeltype,
                     "context": text,
-                    "result": result,
-                    "score": score}
+                    "result": result["sentiment_label"],
+                    "score": result["score"]}
         return self.out
-
-    def _format_text(self, text):
-        if "POSITIVE" in text:
-            result = "POSITIVE"
-        elif "NEGATIVE" in text:
-            result = "NEGATIVE"
-
-        score = text.split(":")[-1][:-1]
-        score
-        return result,score,
-
-
-class MLQA(MLModel):
-    def __init__(self, modeltype: str = "question_answering",
-                       app: str = "http://localhost:8000") -> None:
-        self.endpoint = (app + "/question_answering/")
-        super().__init__(modeltype=modeltype, app=app)
-
-    def question_answering(self, question : str, context : str):
-        context_question = {"context": context, "question": question}
-        endpoint = (self.app + "/qa/")
-        self.r = requests.post(url=endpoint, json=context_question)
-        self.out = {"date": str(datetime.now()),
-                    "modeltype": self.modeltype,
-                    "context": context,
-                    "result": self.r.text.split(":")[1][:-8],
-                    "score": self.r.text.split(":")[-1][:-1],
-                    "question": question}
-        return self.out
-
-class MLImageClassifier(MLModel):
-    def __init__(self, modeltype: str = "image_classifier", app: str = "http://localhost:8000") -> None:
-        self.endpoint = (app + "/classify_image/")
-        super().__init__(modeltype=modeltype, app=app)
-
-    def _change_classes(self, new_classes:dict):
-        r_class = requests.put(url=self.app + "/change_classes/", json=new_classes)
-        pass
-
-    def classify_image(self, file_path : str, classes : dict = {}):
-        if classes != {}:
-            self._change_classes(classes)
-        files = {'file': open(file_path, 'rb')}
-        self.r = requests.post(url=self.endpoint, files=files)
-        self.out = {"date": str(datetime.now()),
-                    "filename" : file_path.split("/")[-1],
-                    "modeltype": self.modeltype,
-                    "result": self.r.text,
-                    "image": self._create_blob(file_path)}
-        return self.out
-
-    def _create_blob(self,filepath : str):
-        # Convert digital data to binary format
-        with open(filepath, 'rb') as file:
-            blobData = file.read()
-        return blobData
-
-class databaseDB():
-    def __init__(self, db_loc = 'data/dbgroup2.db') -> None:
-        self.db_loc = db_loc
-        self.db = sqlite3.Connection
-
-    def createTables():
-        pass
-
-    def _connect(self):
-        self.db = sqlite3.connect(self.db_loc)
-        self.cursor = self.db.cursor()
-
-    def insert(self, command : dict):
-        self._connect()
-
-        columns = [a for a in command.keys()]
-        columns = ",".join(columns)
-        values = [":" + a for a in command.keys()]
-        values = ", ".join(values)
-        execute = f'''INSERT INTO model({columns})
-                    VALUES({values})'''
-        self.cursor.execute(execute,
-                            command)
-        self.db.commit()
-        self._disconnect()
-
-    def _disconnect(self):
-        self.db.close()
-
-    def find_tables(self):
-        self._connect()
-        self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = self.cursor.fetchall()
-        self._disconnect()
-        return tables
-
-def writeTofile(data, filename):
-    # Convert binary data to proper format and write it on Hard Disk
-    with open(filename, 'wb') as file:
-        file.write(data)
-    print("Stored blob data into: ", filename, "\n")
