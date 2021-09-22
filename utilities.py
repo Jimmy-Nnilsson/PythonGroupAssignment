@@ -69,3 +69,29 @@ class MLSentimentAnalysis(MLModel):
                     "result": result["sentiment_label"],
                     "score": result["score"]}
         return self.out
+
+class MLImageClassifier(MLModel):
+    def __init__(self, modeltype: str = "image_classifier", app: str = "http://localhost:8000") -> None:
+        self.endpoint = (app + "/classify_image/")
+        super().__init__(modeltype=modeltype, app=app)
+
+    def _change_classes(self, new_classes:dict):
+        r_class = requests.put(url=self.app + "/change_classes/", json=new_classes)
+
+    def classify_image(self, file, classes : dict = {}, name = "" ):
+        if classes != {}:
+            self._change_classes(classes)
+        files = {'file': file.getvalue()}
+        self.r = requests.post(url=self.endpoint, files=files)
+        self.out = {"date": str(datetime.now()),
+                    "filename" : name,
+                    "modeltype": self.modeltype,
+                    "result": self.r.text,
+                    "image": file.getvalue()}
+        return self.out
+
+    def _create_blob(self,filepath : str):
+        # Convert digital data to binary format
+        with open(filepath, 'rb') as file:
+            blobData = file.read()
+        return blobData
