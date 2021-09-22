@@ -95,3 +95,22 @@ class MLImageClassifier(MLModel):
         with open(filepath, 'rb') as file:
             blobData = file.read()
         return blobData
+
+
+class MLQA(MLModel):
+    def __init__(self, modeltype: str = "question_answering",
+                       app: str = "http://localhost:8000") -> None:
+        self.endpoint = (app + "/question_answering/")
+        super().__init__(modeltype=modeltype, app=app)
+
+    def question_answering(self, question : str, context : str):
+        context_question = {"context": context, "question": question}
+        endpoint = (self.app + "/qa/")
+        self.r = requests.post(url=endpoint, json=context_question)
+        self.out = {"date": str(datetime.now()),
+                    "modeltype": self.modeltype,
+                    "context": context,
+                    "result": self.r.text.split(":")[1][:-8],
+                    "score": self.r.text.split(":")[-1][:-1],
+                    "question": question}
+        return self.out
