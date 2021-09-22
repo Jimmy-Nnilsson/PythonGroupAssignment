@@ -55,7 +55,9 @@ def main():
 
         if btn_classify:
             if upload is not None:
-                image_classifier.classify_image(upload, st.session_state["image_classes"], upload.name)
+                out = image_classifier.classify_image(upload, st.session_state["image_classes"], upload.name)
+
+                st.text(out["result"])
     elif ml_model == "sentiment_analysis":
         st.header("Sentiment analysis")
         a = MLSentimentAnalysis()
