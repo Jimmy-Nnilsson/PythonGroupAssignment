@@ -27,6 +27,9 @@ class MLModel():
     def terminate_server(self):
         subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=self.p.pid))
 
+    def st_stop_server(self,process):
+        subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=process))
+
 class MLTextGenerator(MLModel):
     def __init__(self, modeltype: str = "text_generator", app: str = "http://localhost:8000") -> None:
         super().__init__(modeltype=modeltype, app=app)
