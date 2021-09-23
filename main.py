@@ -63,10 +63,10 @@ def main():
         a = MLSentimentAnalysis()
         a.start()
 
-        user_input = st.text_input("label goes here", default_value_goes_here)
+        user_input = st.text_input("eneter text you want to analyse")
         st.header("MLModel")
-        result = a.analyse_sentiment(user_input)
-        st.text(result.get(user_input))
+        user_result = a.analyse_sentiment(str(user_input))
+        st.text(user_result.get("result"))
 if __name__ == "__main__":
     srv_state = ""
     main()
