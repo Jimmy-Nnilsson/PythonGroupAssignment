@@ -66,7 +66,8 @@ def main():
         user_input = st.text_input("eneter text you want to analyse")
         st.header("MLModel")
         user_result = a.analyse_sentiment(str(user_input))
-        st.text(user_result.get("result"))
+        if st.button('click here for the result'):
+            st.text(user_result.get("result"))
 if __name__ == "__main__":
     srv_state = ""
     main()
