@@ -60,12 +60,22 @@ def main():
                 st.text(out["result"])
     elif ml_model == "sentiment_analysis":
         st.header("Sentiment analysis")
-        a = MLSentimentAnalysis()
-        a.start()
+        sentiment_starter= MLSentimentAnalysis()
+        sentiment_starter.start()
         user_input = st.text_input("eneter text you want to analyse")
-        user_result = a.analyse_sentiment(str(user_input))
+        user_result = sentiment_starter.analyse_sentiment(str(user_input))
         if st.button('click here for the result'):
             st.text(user_result.get("result"))
+    elif ml_model == "text_generator":
+        st.header("text generator")
+        text_starter = MLTextGenerator()
+        text_starter.start()
+        user_input = st.text_input("enter text you program to generate further text on")
+        user_result = text_starter.get_text_gen(str(user_input))
+        if st.button('click here for the result'):
+            st.text(user_result.get("result"))
+            
+         
 if __name__ == "__main__":
     srv_state = ""
     main()
