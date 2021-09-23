@@ -4,7 +4,7 @@ from utilities import *
 
 
 def main():
-
+    st.set_page_config("MLModel")
     if 'server_pid' not in st.session_state:
         st.session_state['server_pid'] = 0
     if 'server_state' not in st.session_state:
@@ -62,9 +62,7 @@ def main():
         st.header("Sentiment analysis")
         a = MLSentimentAnalysis()
         a.start()
-
         user_input = st.text_input("eneter text you want to analyse")
-        st.header("MLModel")
         user_result = a.analyse_sentiment(str(user_input))
         if st.button('click here for the result'):
             st.text(user_result.get("result"))
