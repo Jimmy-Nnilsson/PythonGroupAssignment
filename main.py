@@ -6,7 +6,13 @@ from utilities import *
 
 
 def main():
+    ml_server = MLModel()
+    image_classifier = MLImageClassifier()
+    sentiment_starter= MLSentimentAnalysis()
+    text_starter = MLTextGenerator()
+    question_answering = MLQA
     classify = False
+
     st.set_page_config("MLModel")
     if 'server_pid' not in st.session_state:
         st.session_state['server_pid'] = 0
@@ -14,9 +20,6 @@ def main():
         st.session_state['server_state'] = "Server Stopped"
     if 'image_classes' not in st.session_state:
         st.session_state['image_classes'] = {}
-
-    ml_server = MLModel()
-    image_classifier = MLImageClassifier()
 
     with st.container():
         btn_start_ml = st.sidebar.button("Start ML Model Server")
@@ -57,12 +60,8 @@ def main():
                                                     "class_3": image_class3}
 
             upload = st.file_uploader("Image", type=[".jpg", ".jpeg", '.png'])
-
             btn_classify = st.button("Classify Image")
             container = st.container()
-
-
-
 
             with st.expander("Model log"):
                 with st.form("Forms with things"):
@@ -74,7 +73,6 @@ def main():
                     db = sqlite3.connect("main_database.db")
                     df = pd.read_sql("SELECT * FROM image_classifier", db)
                     db.close()
-                    #df = pd.DataFrame(db.get_table_by_model(columns, "image_classifier"),columns=column_selection)
                     st.write(df)
 
                 if btn_classify_table:
@@ -102,13 +100,11 @@ def main():
                         classify = False
 
         with col2:
-
             if upload is not None:
                 st.image(upload)
 
     elif ml_model == "sentiment_analysis":
         st.header("Sentiment analysis")
-        sentiment_starter= MLSentimentAnalysis()
         sentiment_starter.start()
         user_input = st.text_input("eneter text you want to analyse")
         user_result = sentiment_starter.analyse_sentiment(str(user_input))
@@ -116,12 +112,14 @@ def main():
             st.text(user_result.get("result"))
     elif ml_model == "text_generator":
         st.header("text generator")
-        text_starter = MLTextGenerator()
         text_starter.start()
         user_input = st.text_input("enter text you program to generate further text on")
         user_result = text_starter.get_text_gen(str(user_input))
         if st.button('click here for the result'):
             st.text(user_result.get("result"))
+    elif ml_model == "question_answering":
+        #question_answering
+        pass
 
 
 if __name__ == "__main__":
