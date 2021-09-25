@@ -4,11 +4,10 @@ import pandas as pd
 from utilities import *
 
 
-
 def main():
     ml_server = MLModel()
     image_classifier = MLImageClassifier()
-    sentiment_starter= MLSentimentAnalysis()
+    sentiment_starter = MLSentimentAnalysis()
     text_starter = MLTextGenerator()
     question_answering = MLQA
     classify = False
@@ -36,13 +35,13 @@ def main():
 
     st.sidebar.write(f"PID {str(st.session_state['server_pid'])}")
     ml_model = st.sidebar.selectbox("Select ML Model",
-                                   ["question_answering",
-                                   "text_generator",
-                                   "sentiment_analysis",
-                                   "image_classifier"])
+                                    ["question_answering",
+                                     "text_generator",
+                                     "sentiment_analysis",
+                                     "image_classifier"])
 
     if ml_model == "image_classifier":
-        col1,col2 = st.columns([20,5])
+        col1, col2 = st.columns([20, 5])
         with col1:
             st.header("Image Classifier")
             btn_start = st.button("Start ML model")
@@ -56,8 +55,8 @@ def main():
                     submit_classes = st.form_submit_button("Submit Classes")
             if submit_classes:
                 st.session_state["image_classes"] = {"class_1": image_class1,
-                                                    "class_2": image_class2,
-                                                    "class_3": image_class3}
+                                                     "class_2": image_class2,
+                                                     "class_3": image_class3}
 
             upload = st.file_uploader("Image", type=[".jpg", ".jpeg", '.png'])
             btn_classify = st.button("Classify Image")
@@ -78,27 +77,32 @@ def main():
                 if btn_classify_table:
                     db = sqlite3.connect("main_database.db")
                     cur = db.cursor()
-                    cur.execute(f'''SELECT image,filename FROM image_classifier WHERE id == '{regenerate_id}' ''')
+                    cur.execute(f'''SELECT image,filename
+                                    FROM image_classifier
+                                    WHERE id == '{regenerate_id}' ''')
                     file = cur.fetchall()
                     upload = file[0][0]
                     st.write(file[0][1])
                     classify = True
                     db.close()
-
             with container:
                 if btn_classify:
                     if upload is not None:
                         file = upload.getvalue()
-                        out = image_classifier.classify_image(file, st.session_state["image_classes"], upload.name)
+                        out = image_classifier.classify_image(file,
+                                                              st.session_state["image_classes"],
+                                                              upload.name)
                         write_to_db(out)
                         st.text(out["result"])
                         classify = False
                 elif classify:
-                        out = image_classifier.classify_image(upload, st.session_state["image_classes"], file[0][1])
+                    if upload is not None:
+                        out = image_classifier.classify_image(upload,
+                                                              st.session_state["image_classes"],
+                                                              file[0][1])
                         write_to_db(out)
                         st.text(out["result"])
                         classify = False
-
         with col2:
             if upload is not None:
                 st.image(upload)
@@ -118,7 +122,7 @@ def main():
         if st.button('click here for the result'):
             st.text(user_result.get("result"))
     elif ml_model == "question_answering":
-        #question_answering
+        # question_answering
         pass
 
 
