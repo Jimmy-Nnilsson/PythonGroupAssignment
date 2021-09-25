@@ -5,9 +5,13 @@ import sys
 import sqlite3
 
 class MLModel():
-    modelname = ["question_answering", "text_generator", "sentiment_analysis", "image_classifier"]
+    modelname = ["question_answering",
+                 "text_generator",
+                 "sentiment_analysis",
+                 "image_classifier"]
 
-    def __init__(self, modeltype : str = "", app : str = "http://localhost:8000") -> None:
+    def __init__(self, modeltype : str = "", 
+                 app : str = "http://localhost:8000") -> None:
         self.app = app
         self.modeltype = modeltype
         self.r = requests.Response
@@ -16,34 +20,40 @@ class MLModel():
         self.out = {}
 
     def start(self):
-        selected_model = {"name" : self.modeltype}
-        endpoint= self.app + "/start/"
+        selected_model = {"name": self.modeltype}
+        endpoint = self.app + "/start/"
         self.r = requests.post(url=endpoint, json=selected_model)
         print(self.r.status_code, self.modeltype)
 
     def run_server(self):
-        sub_args=[sys.executable, 'src/main.py']
-        self.p = subprocess.Popen(sub_args,stdin=subprocess.PIPE, stdout=subprocess.PIPE, creationflags = subprocess.CREATE_NEW_CONSOLE,shell=True)
+        sub_args = [sys.executable, 'src/main.py']
+        self.p = subprocess.Popen(sub_args,
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  creationflags=subprocess.CREATE_NEW_CONSOLE,
+                                  shell=True)
 
     def terminate_server(self):
         subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=self.p.pid))
 
-    def st_stop_server(self,process):
+    def st_stop_server(self, process):
         subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=process))
 
+
 class MLTextGenerator(MLModel):
-    def __init__(self, modeltype: str = "text_generator", app: str = "http://localhost:8000") -> None:
+    def __init__(self, modeltype: str = "text_generator",
+                 app: str = "http://localhost:8000") -> None:
         super().__init__(modeltype=modeltype, app=app)
 
-    def get_text_gen(self,text : str):
+    def get_text_gen(self, text: str):
         context = {"context": text}
-        endpoint = (self.app + "/text_generation/" )
+        endpoint = (self.app + "/text_generation/")
         self.r = requests.post(url=endpoint, json=context)
         self._clean_text_gen()
         return{"date": str(datetime.now()),
-        "modeltype": self.modeltype,
-        "context": text,
-        "result": self.r.text.split(":")[1][:-1]}
+               "modeltype": self.modeltype,
+               "context": text,
+               "result": self.r.text.split(":")[1][:-1]}
 
     def _clean_text_gen(self):
         modify = self.r.text[19:-2]
@@ -55,11 +65,12 @@ class MLTextGenerator(MLModel):
 
 
 class MLSentimentAnalysis(MLModel):
-    def __init__(self, modeltype: str = "sentiment_analysis", app: str = "http://localhost:8000") -> None:
+    def __init__(self, modeltype: str = "sentiment_analysis",
+                 app: str = "http://localhost:8000") -> None:
         self.endpoint = (app + "/sentiment_analysis/")
         super().__init__(modeltype=modeltype, app=app)
 
-    def analyse_sentiment(self,text : str):
+    def analyse_sentiment(self, text: str):
         context = {"context": text}
         endpoint = (self.app + "/sentiment_analysis/")
         self.r = requests.post(url=endpoint, json=context)
@@ -71,28 +82,30 @@ class MLSentimentAnalysis(MLModel):
                     "score": result["score"]}
         return self.out
 
+
 class MLImageClassifier(MLModel):
-    def __init__(self, modeltype: str = "image_classifier", app: str = "http://localhost:8000") -> None:
+    def __init__(self, modeltype: str = "image_classifier",
+                 app: str = "http://localhost:8000") -> None:
         self.endpoint = (app + "/classify_image/")
         super().__init__(modeltype=modeltype, app=app)
 
-    def _change_classes(self, new_classes:dict):
-        r_class = requests.put(url=self.app + "/change_classes/", json=new_classes)
+    def _change_classes(self, new_classes: dict):
+        r_class = requests.put(url=self.app + "/change_classes/",
+                               json=new_classes)
 
-    def classify_image(self, file, classes : dict = {}, name = "" ):
+    def classify_image(self, file, classes: dict = {}, name=""):
         if classes != {}:
             self._change_classes(classes)
-        #files = {'file': file.getvalue()}
         files = {'file': file}
         self.r = requests.post(url=self.endpoint, files=files)
         self.out = {"date": str(datetime.now()),
-                    "filename" : name,
+                    "filename": name,
                     "modeltype": self.modeltype,
                     "result": self.r.text,
                     "image": file}
         return self.out
 
-    def _create_blob(self,filepath : str):
+    def _create_blob(self, filepath: str):
         # Convert digital data to binary format
         with open(filepath, 'rb') as file:
             blobData = file.read()
@@ -101,11 +114,11 @@ class MLImageClassifier(MLModel):
 
 class MLQA(MLModel):
     def __init__(self, modeltype: str = "question_answering",
-                       app: str = "http://localhost:8000") -> None:
+                 app: str = "http://localhost:8000") -> None:
         self.endpoint = (app + "/question_answering/")
         super().__init__(modeltype=modeltype, app=app)
 
-    def question_answering(self, question : str, context : str):
+    def question_answering(self, question: str, context: str):
         context_question = {"context": context, "question": question}
         endpoint = (self.app + "/qa/")
         self.r = requests.post(url=endpoint, json=context_question)
@@ -118,7 +131,7 @@ class MLQA(MLModel):
         return self.out
 
 
-def write_to_db(input:dict):
+def write_to_db(input: dict):
 
     default_db_name = "main_database.db"
 
@@ -170,34 +183,47 @@ def write_to_db(input:dict):
         cursor = database_connection.cursor()
         print("Connected to SQLite")
 
-        if(input['modeltype']  == "text_generator"):
+        if(input['modeltype'] == "text_generator"):
             cursor.execute(text_generator_table_create_command)
-            #text_generator data tuple values [date, context, result]
+            # text_generator data tuple values [date, context, result]
             data_tuple = (input["date"], input["context"], input["result"])
             cursor.execute(text_generator_insert_query, data_tuple)
             database_connection.commit()
             cursor.close()
 
-        elif(input['modeltype']  == "sentiment_analysis"):
+        elif(input['modeltype'] == "sentiment_analysis"):
             cursor.execute(sentiment_analysis_table_create_command)
-            #sentiment_analysis data tuple values [date, context, result, score]
-            data_tuple = (input["date"], input["context"], input["result"], input["score"])
+            # sentiment_analysis data tuple values
+            # [date, context, result, score]
+            data_tuple = (input["date"],
+                          input["context"],
+                          input["result"],
+                          input["score"])
             cursor.execute(sentiment_analysis_insert_query, data_tuple)
             database_connection.commit()
             cursor.close()
 
-        elif(input['modeltype']  == "image_classifier"):
+        elif(input['modeltype'] == "image_classifier"):
             cursor.execute(image_classifier_table_create_command)
-            #image_classifier data tuple values [date, filename, result, image]
-            data_tuple = (input["date"], input["filename"], input["result"], input["image"])
+            # image_classifier data tuple values
+            # [date, filename, result, image]
+            data_tuple = (input["date"],
+                          input["filename"],
+                          input["result"],
+                          input["image"])
             cursor.execute(image_classifier_insert_query, data_tuple)
             database_connection.commit()
             cursor.close()
 
-        elif(input['modeltype']  == "question_answering"):
+        elif(input['modeltype'] == "question_answering"):
             cursor.execute(question_answering_table_create_command)
-            #question_answering data tuple values [date, context, result, score, question]
-            data_tuple = (input["date"], input["context"], input["result"], input["score"], input["question"])
+            # question_answering data tuple values
+            # [date, context, result, score, question]
+            data_tuple = (input["date"],
+                          input["context"],
+                          input["result"],
+                          input["score"],
+                          input["question"])
             cursor.execute(question_answering_insert_query, data_tuple)
             database_connection.commit()
             cursor.close()
