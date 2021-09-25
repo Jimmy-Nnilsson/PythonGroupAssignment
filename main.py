@@ -107,7 +107,7 @@ def main():
             if upload is not None:
                 st.image(upload)
 
-        elif ml_model == "sentiment_analysis":
+    elif ml_model == "sentiment_analysis":
         st.header("Sentiment analysis")
         sentiment_starter.start()
         user_input = st.text_input("Enter text you want to analyse")
