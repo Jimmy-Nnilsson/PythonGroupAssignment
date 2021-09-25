@@ -1,9 +1,12 @@
+import sqlite3
 import streamlit as st
+import pandas as pd
 from utilities import *
 
 
 
 def main():
+    classify = False
     st.set_page_config("MLModel")
     if 'server_pid' not in st.session_state:
         st.session_state['server_pid'] = 0
@@ -29,35 +32,80 @@ def main():
             st.session_state['server_pid'] = 0
 
     st.sidebar.write(f"PID {str(st.session_state['server_pid'])}")
-    ml_model = st.sidebar.selectbox("Select ML Model", ["question_answering", "text_generator", "sentiment_analysis", "image_classifier"])
+    ml_model = st.sidebar.selectbox("Select ML Model",
+                                   ["question_answering",
+                                   "text_generator",
+                                   "sentiment_analysis",
+                                   "image_classifier"])
 
     if ml_model == "image_classifier":
-        st.header("Image Classifier")
-        btn_start = st.button("Start ML model")
-        with st.expander("Image classes"):
-            with st.form("ML Classes"):
-                image_class1 = st.text_input("Image Class 1: ")
-                image_class2 = st.text_input("Image Class 2: ")
-                image_class3 = st.text_input("Image Class 3: ")
-                submit_classes = st.form_submit_button("Submit Classes")
-        if submit_classes:
-            st.session_state["image_classes"] = {"class_1": image_class1,
-                                                 "class_2": image_class2,
-                                                 "class_3": image_class3}
+        col1,col2 = st.columns([20,5])
+        with col1:
+            st.header("Image Classifier")
+            btn_start = st.button("Start ML model")
+            if btn_start:
+                image_classifier.start()
+            with st.expander("Image classes"):
+                with st.form("ML Classes"):
+                    image_class1 = st.text_input("Image Class 1: ")
+                    image_class2 = st.text_input("Image Class 2: ")
+                    image_class3 = st.text_input("Image Class 3: ")
+                    submit_classes = st.form_submit_button("Submit Classes")
+            if submit_classes:
+                st.session_state["image_classes"] = {"class_1": image_class1,
+                                                    "class_2": image_class2,
+                                                    "class_3": image_class3}
 
-        upload = st.file_uploader("Image", type=[".jpg", ".jpeg", '.png'])
-        if upload is not None:
-            st.sidebar.image(upload)
-        btn_classify = st.button("Classify Image")
+            upload = st.file_uploader("Image", type=[".jpg", ".jpeg", '.png'])
 
-        if btn_start:
-            image_classifier.start()
+            btn_classify = st.button("Classify Image")
+            container = st.container()
 
-        if btn_classify:
+
+
+
+            with st.expander("Model log"):
+                with st.form("Forms with things"):
+                    btn_update_log = st.form_submit_button("Update Log")
+                    regenerate_id = st.text_input("Input Id to classify")
+                btn_classify_table = st.button("Run Regeneration")
+
+                if btn_update_log:
+                    db = sqlite3.connect("main_database.db")
+                    df = pd.read_sql("SELECT * FROM image_classifier", db)
+                    db.close()
+                    #df = pd.DataFrame(db.get_table_by_model(columns, "image_classifier"),columns=column_selection)
+                    st.write(df)
+
+                if btn_classify_table:
+                    db = sqlite3.connect("main_database.db")
+                    cur = db.cursor()
+                    cur.execute(f'''SELECT image,filename FROM image_classifier WHERE id == '{regenerate_id}' ''')
+                    file = cur.fetchall()
+                    upload = file[0][0]
+                    st.write(file[0][1])
+                    classify = True
+                    db.close()
+
+            with container:
+                if btn_classify:
+                    if upload is not None:
+                        file = upload.getvalue()
+                        out = image_classifier.classify_image(file, st.session_state["image_classes"], upload.name)
+                        write_to_db(out)
+                        st.text(out["result"])
+                        classify = False
+                elif classify:
+                        out = image_classifier.classify_image(upload, st.session_state["image_classes"], file[0][1])
+                        write_to_db(out)
+                        st.text(out["result"])
+                        classify = False
+
+        with col2:
+
             if upload is not None:
-                out = image_classifier.classify_image(upload, st.session_state["image_classes"], upload.name)
+                st.image(upload)
 
-                st.text(out["result"])
     elif ml_model == "sentiment_analysis":
         st.header("Sentiment analysis")
         sentiment_starter= MLSentimentAnalysis()
@@ -74,8 +122,8 @@ def main():
         user_result = text_starter.get_text_gen(str(user_input))
         if st.button('click here for the result'):
             st.text(user_result.get("result"))
-            
-         
+
+
 if __name__ == "__main__":
     srv_state = ""
     main()
