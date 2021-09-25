@@ -19,7 +19,7 @@ class MLModel():
         selected_model = {"name" : self.modeltype}
         endpoint= self.app + "/start/"
         self.r = requests.post(url=endpoint, json=selected_model)
-        print(self.r.status_code)
+        print(self.r.status_code, self.modeltype)
 
     def run_server(self):
         sub_args=[sys.executable, 'src/main.py']
@@ -82,13 +82,14 @@ class MLImageClassifier(MLModel):
     def classify_image(self, file, classes : dict = {}, name = "" ):
         if classes != {}:
             self._change_classes(classes)
-        files = {'file': file.getvalue()}
+        #files = {'file': file.getvalue()}
+        files = {'file': file}
         self.r = requests.post(url=self.endpoint, files=files)
         self.out = {"date": str(datetime.now()),
                     "filename" : name,
                     "modeltype": self.modeltype,
                     "result": self.r.text,
-                    "image": file.getvalue()}
+                    "image": file}
         return self.out
 
     def _create_blob(self,filepath : str):
@@ -136,7 +137,7 @@ def write_to_db(input:dict):
     score TEXT NOT NULL)
 """
 
-    image_classifier_table_create_command = """CREATE TABLE IF NOT EXISTS sentiment_analysis(
+    image_classifier_table_create_command = """CREATE TABLE IF NOT EXISTS image_classifier(
     id INTEGER PRIMARY KEY,
     date TEXT NOT NULL,
     filename TEXT NOT NULL,
@@ -163,7 +164,7 @@ def write_to_db(input:dict):
                                     (date, context, result, score, question) VALUES (?, ?, ?, ?, ?)"""
 
     data_tuple = None
-
+    print(input['modeltype'])
     try:
         database_connection = sqlite3.connect(default_db_name)
         cursor = database_connection.cursor()
@@ -200,7 +201,7 @@ def write_to_db(input:dict):
             cursor.execute(question_answering_insert_query, data_tuple)
             database_connection.commit()
             cursor.close()
-        
+
         else:
             print("Error! Not a valid model type.")
 
