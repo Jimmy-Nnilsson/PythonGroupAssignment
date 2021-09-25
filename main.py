@@ -107,13 +107,13 @@ def main():
             if upload is not None:
                 st.image(upload)
 
-    elif ml_model == "sentiment_analysis":
+        elif ml_model == "sentiment_analysis":
         st.header("Sentiment analysis")
         sentiment_starter.start()
         user_input = st.text_input("Enter text you want to analyse")
-        user_result = sentiment_starter.analyse_sentiment(str(user_input))
-        if st.button('Click here for the result'):
-            st.text(user_result.get("result"))
+        if user_input:
+            user_result = sentiment_starter.analyse_sentiment(str(user_input))
+            write_to_db(user_result)
     elif ml_model == "text_generator":
         st.header("text generator")
         text_starter.start()
