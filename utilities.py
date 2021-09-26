@@ -5,13 +5,23 @@ import sys
 import sqlite3
 
 class MLModel():
-    modelname = ["question_answering",
-                 "text_generator",
-                 "sentiment_analysis",
-                 "image_classifier"]
-
-    def __init__(self, modeltype : str = "", 
+    """Machine learning superclass starts server and activates chosen ml model
+    Methods: __init__
+            start
+            run_server
+            st_stop_Server
+    """
+    def __init__(self, modeltype : str = "",
                  app : str = "http://localhost:8000") -> None:
+        """Initializes class
+
+        Args:
+            modeltype (str, optional): choses what model to activate with 
+                                       the provided http command. 
+                                       Defaults to "".
+            app (str, optional): Server on where the ml modelserver are located.
+                                 Defaults to "http://localhost:8000".
+        """
         self.app = app
         self.modeltype = modeltype
         self.r = requests.Response
@@ -20,6 +30,8 @@ class MLModel():
         self.out = {}
 
     def start(self):
+        """Activates the selected modeltype on the machine learning server
+        """
         selected_model = {"name": self.modeltype}
         endpoint = self.app + "/start/"
         try:
@@ -28,8 +40,8 @@ class MLModel():
         except requests.exceptions.RequestException as e:
             print("No connection to ml server")
 
-
     def run_server(self):
+        """Runs the Machine learning server provided by nordaxon"""
         sub_args = [sys.executable, 'src/main.py']
         self.p = subprocess.Popen(sub_args,
                                   stdin=subprocess.PIPE,
@@ -37,19 +49,48 @@ class MLModel():
                                   creationflags=subprocess.CREATE_NEW_CONSOLE,
                                   shell=True)
 
-    def terminate_server(self):
-        subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=self.p.pid))
+    def st_stop_server(self, process = ""):
+        """Stops the machine learning server provided by nordaxon
 
-    def st_stop_server(self, process):
-        subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=process))
-
+        Args:
+            process (str, optional): What process number to kill. Defaults to "".
+        """
+        if process != "":
+            subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=process))
+        else:
+            subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=self.p.pid))
 
 class MLTextGenerator(MLModel):
+    """Machine learning model textgenerator
+    Methods: __init__
+            start : from super class
+            run_server : from super class
+            st_stop_Server : from super class
+
+            get_text_get
+            _clean_text_gen
+    """
     def __init__(self, modeltype: str = "text_generator",
                  app: str = "http://localhost:8000") -> None:
+        """Intitializes class
+
+        Args:
+            modeltype (str, optional): modeltype to use for commands.
+                                       Defaults to "text_generator".
+            app (str, optional): Machine learning server adress.
+                                 Defaults to "http://localhost:8000".
+        """
         super().__init__(modeltype=modeltype, app=app)
 
-    def get_text_gen(self, text: str):
+    def get_text_gen(self, text: str) -> dict:
+        """Machine learning model generates text on provided string
+
+        Args:
+            text (str): Start text for the machine learning model
+
+        Returns:
+            dict: outputs date, modeltype, contex and result in a dictionary
+        """
         context = {"context": text}
         endpoint = (self.app + "/text_generation/")
         self.out = {"date": str(datetime.now()),
@@ -66,6 +107,8 @@ class MLTextGenerator(MLModel):
         return self.out
 
     def _clean_text_gen(self):
+        """Cleans api result from linebreaks and double spaces
+        """
         modify = self.r.text[19:-2]
         newmodify = modify
         while '\\n' in newmodify or '  ' in newmodify:
@@ -75,12 +118,37 @@ class MLTextGenerator(MLModel):
 
 
 class MLSentimentAnalysis(MLModel):
+    """Machine learning model textgenerator
+    Methods: __init__
+            start : from super class
+            run_server : from super class
+            st_stop_Server : from super class
+
+            analyes_sentiment
+    """
     def __init__(self, modeltype: str = "sentiment_analysis",
                  app: str = "http://localhost:8000") -> None:
+        """Intitializes class
+
+        Args:
+            modeltype (str, optional): modeltype to use for commands.
+                                       Defaults to "text_generator".
+            app (str, optional): Machine learning server adress.
+                                 Defaults to "http://localhost:8000".
+        """
         self.endpoint = (app + "/sentiment_analysis/")
         super().__init__(modeltype=modeltype, app=app)
 
-    def analyse_sentiment(self, text: str):
+    def analyse_sentiment(self, text: str) -> dict:
+        """Machine learning model generates analyses sentiment on
+           provided string
+
+        Args:
+            text (str): Text to analyse
+
+        Returns:
+            dict: outputs date, modeltype, contex and result in a dictionary
+        """
         context = {"context": text}
         endpoint = (self.app + "/sentiment_analysis/")
         self.out = {"date": str(datetime.now()),
@@ -100,18 +168,55 @@ class MLSentimentAnalysis(MLModel):
 
 
 class MLImageClassifier(MLModel):
+    """Machine learning model image classifier
+    Methods: __init__
+            start : from super class
+            run_server : from super class
+            st_stop_Server : from super class
+
+            _change_classes
+            classify_image
+    """
     def __init__(self, modeltype: str = "image_classifier",
                  app: str = "http://localhost:8000") -> None:
+        """Intitializes class
+
+        Args:
+            modeltype (str, optional): modeltype to use for commands. 
+                                       Defaults to "text_generator".
+            app (str, optional): Machine learning server adress. 
+                                 Defaults to "http://localhost:8000".
+        """
         self.endpoint = (app + "/classify_image/")
         super().__init__(modeltype=modeltype, app=app)
 
     def _change_classes(self, new_classes: dict):
+        """Changes the class used to try to match the picture to
+
+        Args:
+            new_classes (dict): new classes in the format
+            {"class_1 : "", "class_2" : "", "class_3" : ""}
+        """
         r_class = requests.put(url=self.app + "/change_classes/",
                                json=new_classes)
 
-    def classify_image(self, file, classes: dict = {}, name=""):
+    def classify_image(self,
+                       file : bytes,
+                       classes: dict = {},
+                       name : str="") -> dict:
+        """Classifies image to provided or default classes.
+
+        Args:
+            file (bytes): imagefile to classify
+            classes (dict, optional): Classes to compare to. Defaults to {}.
+            name (str, optional): filename. Defaults to "".
+
+        Returns:
+            dict: date, modeltype, result, image in a dictionary
+        """
         if classes != {}:
             self._change_classes(classes)
+        print(type(file))
         files = {'file': file}
         self.out = {"date": str(datetime.now()),
                         "filename": name,
@@ -123,23 +228,46 @@ class MLImageClassifier(MLModel):
             self.out["result"] = self.r.text
         except requests.exceptions.RequestException as e:
             print("No connection to ml server")
-
         return self.out
-
-    def _create_blob(self, filepath: str):
-        # Convert digital data to binary format
-        with open(filepath, 'rb') as file:
-            blobData = file.read()
-        return blobData
 
 
 class MLQA(MLModel):
+    """Machine learning model question answering
+    Methods: __init__
+            start : from super class
+            run_server : from super class
+            st_stop_Server : from super class
+
+            question_answering
+    """
     def __init__(self, modeltype: str = "question_answering",
                  app: str = "http://localhost:8000") -> None:
+        """Intitializes class
+
+        Args:
+            modeltype (str, optional): modeltype to use for commands.
+                                       Defaults to "text_generator".
+            app (str, optional): Machine learning server adress.
+                                 Defaults to "http://localhost:8000".
+        """
+        super().__
         self.endpoint = (app + "/question_answering/")
         super().__init__(modeltype=modeltype, app=app)
 
-    def question_answering(self, question: str, context: str):
+    def question_answering(self, question: str, context: str) -> dict:
+        """Machine learning model generates answeres on provided text and question
+
+        Args:
+            question (str): Question to find answer on
+            context (str): Source to find answer on
+
+        Returns:
+            dict: outputs date,
+                          modeltype,
+                          contex,
+                          result,
+                          score and question in a dictionary
+        """
         context_question = {"context": context, "question": question}
         endpoint = (self.app + "/qa/")
 
