@@ -22,8 +22,12 @@ class MLModel():
     def start(self):
         selected_model = {"name": self.modeltype}
         endpoint = self.app + "/start/"
-        self.r = requests.post(url=endpoint, json=selected_model)
-        print(self.r.status_code, self.modeltype)
+        try:
+            self.r = requests.post(url=endpoint, json=selected_model)
+            print(self.r.status_code, self.modeltype)
+        except requests.exceptions.RequestException as e:
+            print("No connection to ml server")
+
 
     def run_server(self):
         sub_args = [sys.executable, 'src/main.py']
@@ -48,12 +52,18 @@ class MLTextGenerator(MLModel):
     def get_text_gen(self, text: str):
         context = {"context": text}
         endpoint = (self.app + "/text_generation/")
-        self.r = requests.post(url=endpoint, json=context)
-        self._clean_text_gen()
-        return{"date": str(datetime.now()),
-               "modeltype": self.modeltype,
-               "context": text,
-               "result": self.r.text.split(":")[1][:-1]}
+        self.out = {"date": str(datetime.now()),
+                "modeltype": self.modeltype,
+                "context": text,
+                "result": "ConnectionError"}
+        try:
+            self.r = requests.post(url=endpoint, json=context)
+            self._clean_text_gen()
+            self.out["result"] = self.r.text.split(":")[1][:-1]
+
+        except requests.exceptions.RequestException as e:
+            print("No connection to ml server")
+        return self.out
 
     def _clean_text_gen(self):
         modify = self.r.text[19:-2]
@@ -73,13 +83,19 @@ class MLSentimentAnalysis(MLModel):
     def analyse_sentiment(self, text: str):
         context = {"context": text}
         endpoint = (self.app + "/sentiment_analysis/")
-        self.r = requests.post(url=endpoint, json=context)
-        result = dict(self.r.json())
         self.out = {"date": str(datetime.now()),
                     "modeltype": self.modeltype,
                     "context": text,
-                    "result": result["sentiment_label"],
-                    "score": result["score"]}
+                    "result": "ConnectionError",
+                    "score": ""}
+        try:
+            self.r = requests.post(url=endpoint, json=context)
+            result = dict(self.r.json())
+            self.out["result"] = result["sentiment_label"]
+            self.out["score"] = result["score"]
+        except requests.exceptions.RequestException as e:
+            print("No connection to ml server")
+
         return self.out
 
 
@@ -97,12 +113,17 @@ class MLImageClassifier(MLModel):
         if classes != {}:
             self._change_classes(classes)
         files = {'file': file}
-        self.r = requests.post(url=self.endpoint, files=files)
         self.out = {"date": str(datetime.now()),
-                    "filename": name,
-                    "modeltype": self.modeltype,
-                    "result": self.r.text,
-                    "image": file}
+                        "filename": name,
+                        "modeltype": self.modeltype,
+                        "result": "ConnectionError",
+                        "image": file}
+        try:
+            self.r = requests.post(url=self.endpoint, files=files)
+            self.out["result"] = self.r.text
+        except requests.exceptions.RequestException as e:
+            print("No connection to ml server")
+
         return self.out
 
     def _create_blob(self, filepath: str):
@@ -121,13 +142,19 @@ class MLQA(MLModel):
     def question_answering(self, question: str, context: str):
         context_question = {"context": context, "question": question}
         endpoint = (self.app + "/qa/")
-        self.r = requests.post(url=endpoint, json=context_question)
+
         self.out = {"date": str(datetime.now()),
                     "modeltype": self.modeltype,
                     "context": context,
-                    "result": self.r.text.split(":")[1][:-8],
-                    "score": self.r.text.split(":")[-1][:-1],
+                    "result": "ConnectionError",
+                    "score": "",
                     "question": question}
+        try:
+            self.r = requests.post(url=endpoint, json=context_question)
+            self.out["result"] = self.r.text.split(":")[1][:-8]
+            self.out["score"] = self.r.text.split(":")[-1][:-1]
+        except requests.exceptions.RequestException as e:
+            print("No connection to ml server")
         return self.out
 
 
