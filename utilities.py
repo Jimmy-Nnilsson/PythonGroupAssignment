@@ -103,22 +103,28 @@ class MLTextGenerator(MLModel):
         try:
             self.r = requests.post(url=endpoint, json=context)
             self._clean_text_gen()
-            self.out["result"] = self.r.text.split(":")[1][:-1]
+            #self.out["result"] = self.r.text.split(":")[1][:-1]
+            self.out["result"] = self.r.text
 
         except requests.exceptions.RequestException as e:
             print("No connection to ml server")
         return self.out
 
     def _clean_text_gen(self):
+        
         """Cleans api result from linebreaks and double spaces
         """
-        modify = self.r.text[19:-2]
+        modify = self.r.text.strip()
+        #modify = modify[19:-2]
         newmodify = modify
+        print("garbage cleaner!!!!")
+        """
         while '\\n' in newmodify or '  ' in newmodify:
             newmodify = newmodify.replace('\\n', ' ')
             newmodify = newmodify.replace('  ', ' ')
+        """
         self.text = newmodify
-
+        
 
 class MLSentimentAnalysis(MLModel):
     """Machine learning model textgenerator

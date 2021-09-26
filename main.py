@@ -1,7 +1,10 @@
+from pathlib import WindowsPath
+from re import U
 import sqlite3
 import streamlit as st
 import pandas as pd
 from utilities import *
+import json
 
 # #Remove comment to enable debug in VScode though ptvsd is needed through pip install
 # import ptvsd
@@ -10,10 +13,10 @@ from utilities import *
 # ptvsd.wait_for_attach()
 
 def main():
-    st.set_page_config(page_title="Group 2 ML interactor",
+    """st.set_page_config(page_title="Group 2 ML interactor",
                        page_icon=None,
                        layout='wide',
-                       initial_sidebar_state='auto')
+                       initial_sidebar_state='auto') """
 
     ml_server = MLModel()
     image_classifier = MLImageClassifier()
@@ -129,9 +132,34 @@ def main():
         st.header("text generator")
         text_starter.start()
         user_input = st.text_input("Enter text you program to generate further text on")
-        if user_input:
-            user_result = text_starter.get_text_gen(str(user_input))
-            st.text(user_result.get("result"))
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            text_generator_button = st.button("Generate")
+        with col2:
+            text_logger_button = st.button("Show log")
+        with col3:
+            retreive_from_log = st.button("retrieve")
+
+        if text_generator_button:
+            user_result = text_starter.get_text_gen(user_input)
+            print(user_result)
+            write_to_db(user_result)
+            text_starter.r.json()
+            duser_result = dict(text_starter.r.json())
+            #duser_result["generated_text"]
+            st.write(duser_result["generated_text"])
+        if text_logger_button:
+            db = sqlite3.connect("main_database.db")
+            df = pd.read_sql("SELECT * FROM text_generator", db)
+            db.close()
+            st.write(df)
+        if retreive_from_log:
+            st.write("This functions is not working yet!")
+                
+        else:
+            st.write("Database index out of range")
+
     elif ml_model == "question_answering":
         # question_answering
         pass
