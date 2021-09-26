@@ -3,6 +3,13 @@ import streamlit as st
 import pandas as pd
 from utilities import *
 
+# #Remove comment to enable debug in VScode though ptvsd is needed through pip install
+# import ptvsd
+# st.set_page_config(page_title="Group 2 ML interactor", page_icon=None, layout='wide', initial_sidebar_state='auto')
+
+# print("Waiting for debugger attach")
+# ptvsd.enable_attach(address=("localhost", 5678), redirect_output=True)
+# ptvsd.wait_for_attach()
 
 def main():
     ml_server = MLModel()
@@ -12,7 +19,6 @@ def main():
     question_answering = MLQA
     classify = False
 
-    st.set_page_config("MLModel")
     if 'server_pid' not in st.session_state:
         st.session_state['server_pid'] = 0
     if 'server_state' not in st.session_state:
@@ -41,7 +47,7 @@ def main():
                                      "image_classifier"])
 
     if ml_model == "image_classifier":
-        col1, col2 = st.columns([20, 5])
+        col1, col2 = st.columns([10, 10])
         with col1:
             st.header("Image Classifier")
             btn_start = st.button("Start ML model")
@@ -62,47 +68,50 @@ def main():
             btn_classify = st.button("Classify Image")
             container = st.container()
 
-            with st.expander("Model log"):
-                with st.form("Forms with things"):
-                    btn_update_log = st.form_submit_button("Update Log")
-                    regenerate_id = st.text_input("Input Id to classify")
-                btn_classify_table = st.button("Run Regeneration")
+            with st.form("Forms with things"):
+                btn_update_log = st.form_submit_button("Update Log")
+                regenerate_id = st.text_input("Input Id to classify")
+                btn_classify_table = st.form_submit_button("Run Regeneration")
 
-                if btn_update_log:
-                    db = sqlite3.connect("main_database.db")
-                    df = pd.read_sql("SELECT * FROM image_classifier", db)
-                    db.close()
-                    st.write(df)
+            if btn_update_log:
+                db = sqlite3.connect("main_database.db")
+                df = pd.read_sql("SELECT * FROM image_classifier", db)
+                db.close()
+                st.write(df)
 
-                if btn_classify_table:
-                    db = sqlite3.connect("main_database.db")
-                    cur = db.cursor()
-                    cur.execute(f'''SELECT image,filename
-                                    FROM image_classifier
-                                    WHERE id == '{regenerate_id}' ''')
-                    file = cur.fetchall()
+            if btn_classify_table:
+                db = sqlite3.connect("main_database.db")
+                cur = db.cursor()
+                cur.execute(f'''SELECT image,filename
+                                FROM image_classifier
+                                WHERE id == '{regenerate_id}' ''')
+                file = cur.fetchall()
+                if file != []:
                     upload = file[0][0]
-                    st.write(file[0][1])
                     classify = True
                     db.close()
+                else:
+                    st.write("Database index out of range")
+
             with container:
-                if btn_classify:
+                if btn_classify or classify:
                     if upload is not None:
-                        file = upload.getvalue()
-                        out = image_classifier.classify_image(file,
-                                                              st.session_state["image_classes"],
-                                                              upload.name)
+                        if btn_classify:
+                            file = upload.getvalue()
+                            out = image_classifier.classify_image(file,
+                                                                  st.session_state["image_classes"],
+                                                                  upload.name)
+                        elif classify:
+                            out = image_classifier.classify_image(upload,
+                                                                    st.session_state["image_classes"],
+                                                                    file[0][1])
                         write_to_db(out)
-                        st.text(out["result"])
+                        result_dict = dict(image_classifier.r.json())
+                        best_match = sorted(result_dict, key=result_dict.get, reverse=True)[0]
+                        st.text(f"From the classes the best match is: {best_match.capitalize()}")
+                        st.text(f"with a probability of {round(float(result_dict[best_match])*100,1)}%")
                         classify = False
-                elif classify:
-                    if upload is not None:
-                        out = image_classifier.classify_image(upload,
-                                                              st.session_state["image_classes"],
-                                                              file[0][1])
-                        write_to_db(out)
-                        st.text(out["result"])
-                        classify = False
+
         with col2:
             if upload is not None:
                 st.image(upload)
@@ -128,4 +137,5 @@ def main():
 
 if __name__ == "__main__":
     srv_state = ""
+
     main()
