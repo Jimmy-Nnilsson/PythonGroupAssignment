@@ -219,7 +219,6 @@ class MLImageClassifier(MLModel):
         """
         if classes != {}:
             self._change_classes(classes)
-        print(type(file))
         files = {'file': file}
         self.out = {"date": str(datetime.now()),
                     "filename": name,
