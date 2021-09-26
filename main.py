@@ -3,10 +3,10 @@ import streamlit as st
 import pandas as pd
 from utilities import *
 
+st.set_page_config(page_title="Group 2 ML interactor", page_icon=None, layout='wide', initial_sidebar_state='auto')
+
 # #Remove comment to enable debug in VScode though ptvsd is needed through pip install
 # import ptvsd
-# st.set_page_config(page_title="Group 2 ML interactor", page_icon=None, layout='wide', initial_sidebar_state='auto')
-
 # print("Waiting for debugger attach")
 # ptvsd.enable_attach(address=("localhost", 5678), redirect_output=True)
 # ptvsd.wait_for_attach()
@@ -26,9 +26,9 @@ def main():
     if 'image_classes' not in st.session_state:
         st.session_state['image_classes'] = {}
 
-    with st.container():
-        btn_start_ml = st.sidebar.button("Start ML Model Server")
-        btn_stop_ml = st.sidebar.button("Stop ML Model Server")
+
+    btn_start_ml = st.sidebar.button("Start ML Model Server")
+    btn_stop_ml = st.sidebar.button("Stop ML Model Server")
 
     if btn_start_ml:
         if st.session_state['server_pid'] == 0:
