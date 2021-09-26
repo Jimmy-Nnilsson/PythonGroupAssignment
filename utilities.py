@@ -4,6 +4,7 @@ import subprocess
 import sys
 import sqlite3
 
+
 class MLModel():
     """Machine learning superclass starts server and activates chosen ml model
     Methods: __init__
@@ -11,13 +12,13 @@ class MLModel():
             run_server
             st_stop_Server
     """
-    def __init__(self, modeltype : str = "",
-                 app : str = "http://localhost:8000") -> None:
+    def __init__(self, modeltype: str = "",
+                 app: str = "http://localhost:8000") -> None:
         """Initializes class
 
         Args:
-            modeltype (str, optional): choses what model to activate with 
-                                       the provided http command. 
+            modeltype (str, optional): choses what model to activate with
+                                       the provided http command.
                                        Defaults to "".
             app (str, optional): Server on where the ml modelserver are located.
                                  Defaults to "http://localhost:8000".
@@ -49,16 +50,18 @@ class MLModel():
                                   creationflags=subprocess.CREATE_NEW_CONSOLE,
                                   shell=True)
 
-    def st_stop_server(self, process = ""):
+    def st_stop_server(self, process=""):
         """Stops the machine learning server provided by nordaxon
 
         Args:
-            process (str, optional): What process number to kill. Defaults to "".
+            process (str, optional): What process number to kill.
+                                     Defaults to "".
         """
         if process != "":
             subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=process))
         else:
             subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=self.p.pid))
+
 
 class MLTextGenerator(MLModel):
     """Machine learning model textgenerator
@@ -94,9 +97,9 @@ class MLTextGenerator(MLModel):
         context = {"context": text}
         endpoint = (self.app + "/text_generation/")
         self.out = {"date": str(datetime.now()),
-                "modeltype": self.modeltype,
-                "context": text,
-                "result": "ConnectionError"}
+                    "modeltype": self.modeltype,
+                    "context": text,
+                    "result": "ConnectionError"}
         try:
             self.r = requests.post(url=endpoint, json=context)
             self._clean_text_gen()
@@ -182,10 +185,10 @@ class MLImageClassifier(MLModel):
         """Intitializes class
 
         Args:
-            modeltype (str, optional): modeltype to use for commands. 
-                                       Defaults to "text_generator".
-            app (str, optional): Machine learning server adress. 
-                                 Defaults to "http://localhost:8000".
+            modeltype (str, optional): modeltype to use for commands.
+                                       Defaults to "text_generator"
+            app (str, optional): Machine learning server adress.
+                                 Defaults to "http://localhost:8000"
         """
         self.endpoint = (app + "/classify_image/")
         super().__init__(modeltype=modeltype, app=app)
@@ -201,9 +204,9 @@ class MLImageClassifier(MLModel):
                                json=new_classes)
 
     def classify_image(self,
-                       file : bytes,
+                       file: bytes,
                        classes: dict = {},
-                       name : str="") -> dict:
+                       name: str = "") -> dict:
         """Classifies image to provided or default classes.
 
         Args:
@@ -219,10 +222,10 @@ class MLImageClassifier(MLModel):
         print(type(file))
         files = {'file': file}
         self.out = {"date": str(datetime.now()),
-                        "filename": name,
-                        "modeltype": self.modeltype,
-                        "result": "ConnectionError",
-                        "image": file}
+                    "filename": name,
+                    "modeltype": self.modeltype,
+                    "result": "ConnectionError",
+                    "image": file}
         try:
             self.r = requests.post(url=self.endpoint, files=files)
             self.out["result"] = self.r.text
@@ -255,7 +258,8 @@ class MLQA(MLModel):
         super().__init__(modeltype=modeltype, app=app)
 
     def question_answering(self, question: str, context: str) -> dict:
-        """Machine learning model generates answeres on provided text and question
+        """Machine learning model generates answeres on provided text
+           and question
 
         Args:
             question (str): Question to find answer on
@@ -286,15 +290,14 @@ class MLQA(MLModel):
         return self.out
 
 
-
-def _text_generator_to_db(cursor:sqlite3.Cursor, database_connection:sqlite3.Connection, input:dict):
-
+def _text_generator_to_db(cursor: sqlite3.Cursor,
+                          database_connection: sqlite3.Connection,
+                          input: dict):
     text_generator_table_create_command = """CREATE TABLE IF NOT EXISTS text_generator(
-    id INTEGER PRIMARY KEY,
-    date TEXT NOT NULL,
-    context TEXT NOT NULL,
-    result TEXT NOT NULL)
-"""
+                                             id INTEGER PRIMARY KEY,
+                                             date TEXT NOT NULL,
+                                             context TEXT NOT NULL,
+                                             result TEXT NOT NULL)"""
     text_generator_insert_query = """INSERT INTO text_generator
                                     (date, context, result) VALUES (?, ?, ?)"""
 
@@ -306,61 +309,63 @@ def _text_generator_to_db(cursor:sqlite3.Cursor, database_connection:sqlite3.Con
     cursor.close()
 
 
-def _image_classifier_to_db(cursor:sqlite3.Cursor, database_connection:sqlite3.Connection, input:dict):
-
+def _image_classifier_to_db(cursor: sqlite3.Cursor,
+                            database_connection: sqlite3.Connection,
+                            input: dict):
     image_classifier_table_create_command = """CREATE TABLE IF NOT EXISTS image_classifier(
-    id INTEGER PRIMARY KEY,
-    date TEXT NOT NULL,
-    filename TEXT NOT NULL,
-    result TEXT NOT NULL,
-    image BLOB NOT NULL)
-"""
+                                               id INTEGER PRIMARY KEY,
+                                               date TEXT NOT NULL,
+                                               filename TEXT NOT NULL,
+                                               result TEXT NOT NULL,
+                                               image BLOB NOT NULL)"""
     image_classifier_insert_query = """INSERT INTO image_classifier
                                     (date, filename, result, image) VALUES (?, ?, ?, ?)"""
-
     cursor.execute(image_classifier_table_create_command)
     # image_classifier data tuple values
     # [date, filename, result, image]
     data_tuple = (input["date"],
-                input["filename"],
-                input["result"],
-                input["image"])
+                  input["filename"],
+                  input["result"],
+                  input["image"])
     cursor.execute(image_classifier_insert_query, data_tuple)
     database_connection.commit()
     cursor.close()
 
-def _sentiment_analysis_to_db(cursor:sqlite3.Cursor, database_connection:sqlite3.Connection, input:dict):
 
+def _sentiment_analysis_to_db(cursor: sqlite3.Cursor,
+                              database_connection: sqlite3.Connection,
+                              input: dict):
     sentiment_analysis_table_create_command = """CREATE TABLE IF NOT EXISTS sentiment_analysis(
-    id INTEGER PRIMARY KEY,
-    date TEXT NOT NULL,
-    context TEXT NOT NULL,
-    result TEXT NOT NULL,
-    score TEXT NOT NULL)
-"""
+                                                 id INTEGER PRIMARY KEY,
+                                                 date TEXT NOT NULL,
+                                                 context TEXT NOT NULL,
+                                                 result TEXT NOT NULL,
+                                                 score TEXT NOT NULL)"""
     sentiment_analysis_insert_query = """INSERT INTO sentiment_analysis
                                     (date, context, result, score) VALUES (?, ?, ?, ?)"""
     cursor.execute(sentiment_analysis_table_create_command)
     # sentiment_analysis data tuple values
     # [date, context, result, score]
     data_tuple = (input["date"],
-                input["context"],
-                input["result"],
-                input["score"])
+                  input["context"],
+                  input["result"],
+                  input["score"])
     cursor.execute(sentiment_analysis_insert_query, data_tuple)
     database_connection.commit()
-    cursor.close()    
+    cursor.close()
 
-def _question_answering_to_db(cursor:sqlite3.Cursor, database_connection:sqlite3.Connection, input:dict):
+
+def _question_answering_to_db(cursor: sqlite3.Cursor,
+                              database_connection: sqlite3.Connection,
+                              input: dict):
 
     question_answering_table_create_command = """CREATE TABLE IF NOT EXISTS question_answering(
-    id INTEGER PRIMARY KEY,
-    date TEXT NOT NULL,
-    context TEXT NOT NULL,
-    result TEXT NOT NULL,
-    score TEXT NOT NULL,
-    question TEXT NOT NULL)
-"""
+                                                 id INTEGER PRIMARY KEY,
+                                                 date TEXT NOT NULL,
+                                                 context TEXT NOT NULL,
+                                                 result TEXT NOT NULL,
+                                                 score TEXT NOT NULL,
+                                                 question TEXT NOT NULL)"""
     question_answering_insert_query = """INSERT INTO question_answering
                                     (date, context, result, score, question) VALUES (?, ?, ?, ?, ?)"""
 
@@ -368,10 +373,10 @@ def _question_answering_to_db(cursor:sqlite3.Cursor, database_connection:sqlite3
     # question_answering data tuple values
     # [date, context, result, score, question]
     data_tuple = (input["date"],
-                input["context"],
-                input["result"],
-                input["score"],
-                input["question"])
+                  input["context"],
+                  input["result"],
+                  input["score"],
+                  input["question"])
     cursor.execute(question_answering_insert_query, data_tuple)
     database_connection.commit()
     cursor.close()
