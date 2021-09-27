@@ -1,9 +1,9 @@
 import requests
-from datetime import datetime
 import subprocess
 import sys
 import sqlite3
 
+from datetime import datetime
 
 class MLModel():
     """Machine learning superclass starts server and activates chosen ml model
@@ -38,8 +38,14 @@ class MLModel():
         try:
             self.r = requests.post(url=endpoint, json=selected_model)
             print(self.r.status_code, self.modeltype)
+            if self.r.status_code == 200:
+                return self.modeltype
+            else:
+                return ""
         except requests.exceptions.RequestException as e:
             print("No connection to ml server")
+            return ""
+
 
     def run_server(self):
         """Runs the Machine learning server provided by nordaxon"""
@@ -50,7 +56,7 @@ class MLModel():
                                   creationflags=subprocess.CREATE_NEW_CONSOLE,
                                   shell=True)
 
-    def st_stop_server(self, process=""):
+    def stop_server(self, process=""):
         """Stops the machine learning server provided by nordaxon
 
         Args:
@@ -111,20 +117,14 @@ class MLTextGenerator(MLModel):
         return self.out
 
     def _clean_text_gen(self):
-        
+
         """Cleans api result from linebreaks and double spaces
         """
         modify = self.r.text.strip()
-        #modify = modify[19:-2]
         newmodify = modify
         print("garbage cleaner!!!!")
-        """
-        while '\\n' in newmodify or '  ' in newmodify:
-            newmodify = newmodify.replace('\\n', ' ')
-            newmodify = newmodify.replace('  ', ' ')
-        """
         self.text = newmodify
-        
+
 
 class MLSentimentAnalysis(MLModel):
     """Machine learning model textgenerator
