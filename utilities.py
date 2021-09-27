@@ -423,8 +423,7 @@ def write_to_db(input: dict):
             database_connection.close()
             print("SQLite connection is closed")
 
-			
-			
+
 def view_db_log(model:str):
     default_db_name = "main_database.db"
     db = sqlite3.connect(default_db_name)
