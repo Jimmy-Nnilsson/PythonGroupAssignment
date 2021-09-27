@@ -2,6 +2,8 @@ import requests
 import subprocess
 import sys
 import sqlite3
+import streamlit as st
+import pandas as pd
 
 from datetime import datetime
 
@@ -420,3 +422,29 @@ def write_to_db(input: dict):
         if database_connection:
             database_connection.close()
             print("SQLite connection is closed")
+
+			
+			
+def view_db_log(model:str):
+    default_db_name = "main_database.db"
+    db = sqlite3.connect(default_db_name)
+    df = None
+    try:
+        if(model == "text_generator"):
+            df = pd.read_sql("SELECT * FROM text_generator", db)
+
+        elif(model == "sentiment_analysis"):
+            df = pd.read_sql("SELECT * FROM sentiment_analysis", db)
+
+        elif(model == "image_classifier"):
+            df = pd.read_sql("SELECT * FROM image_classifier", db)
+
+        elif(model == "question_answering"):
+            df = pd.read_sql("SELECT * FROM question_answering", db)
+        else:
+            print("Error! Not a valid model type.")
+    except pd.io.sql.DatabaseError as error:
+        print("Database was not found!", error)
+    finally:
+        db.close()
+        st.write(df)
