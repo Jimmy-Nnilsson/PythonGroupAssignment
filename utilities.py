@@ -453,6 +453,29 @@ def view_db_log(model:str):
         st.write(df_database)
 
 
+def get_id_db_log(columns: str, rowid: str, model: str) -> list:
+    """Get an isolated row with selected columns from the model
+       table
+
+    Args:
+        columns (str): Columns to choose from the table
+        rowid (str): Rownumber to output from the table
+        model (str): what table to access
+
+    Returns:
+        list: the row with selected columns
+    """
+    default_db_name = "main_database.db"
+    database = sqlite3.connect(default_db_name)
+    cur = database.cursor()
+
+    cur.execute(f'''SELECT {columns} FROM {model} WHERE id =='{rowid}' ''')
+    df_database = cur.fetchall()
+
+    database.close()
+    return(df_database)
+
+
 def body_sidebar() -> str:
     """Streamlit page for the sidebar
     starts Machine learning server.
@@ -525,22 +548,15 @@ def body_image_classifier():
             btn_classify_table = st.form_submit_button("Run Regeneration")
 
         if btn_update_log:
-            database = sqlite3.connect("main_database.db")
-            df_database = pd.read_sql("SELECT * FROM image_classifier", database)
-            database.close()
-            st.write(df_database)
+            view_db_log(st.session_state['running_model'])
 
         if btn_classify_table:
-            database = sqlite3.connect("main_database.db")
-            cur = database.cursor()
-            cur.execute(f'''SELECT image,filename
-                            FROM image_classifier
-                            WHERE id == '{regenerate_id}' ''')
-            file = cur.fetchall()
+            file = get_id_db_log("image,filename",
+                                 regenerate_id,
+                                 st.session_state['running_model'])
             if file != []:
                 upload = file[0][0]
                 classify = True
-                database.close()
             else:
                 st.write("Database index out of range")
 
@@ -593,6 +609,7 @@ def body_text_generator():
 
         st.write(duser_result["generated_text"])
     if text_logger_button:
+
         database = sqlite3.connect("main_database.db")
         df_database = pd.read_sql("SELECT * FROM text_generator", database)
         database.close()
