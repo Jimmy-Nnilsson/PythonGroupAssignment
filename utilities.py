@@ -1,11 +1,13 @@
-import requests
-import subprocess
+"""Help classes and functions for group2 streamlit ml app
+"""
 import sys
+import subprocess
 import sqlite3
+from datetime import datetime
+import requests
 import streamlit as st
 import pandas as pd
 
-from datetime import datetime
 
 class MLModel():
     """Machine learning superclass starts server and activates chosen ml model
@@ -27,9 +29,9 @@ class MLModel():
         """
         self.app = app
         self.modeltype = modeltype
-        self.r = requests.Response
+        self.response = requests.Response
         self.text = str
-        self.p = subprocess.Popen
+        self.serverprocess = subprocess.Popen
         self.out = {}
 
     def start(self):
@@ -38,21 +40,22 @@ class MLModel():
         selected_model = {"name": self.modeltype}
         endpoint = self.app + "/start/"
         try:
-            self.r = requests.post(url=endpoint, json=selected_model)
-            print(self.r.status_code, self.modeltype)
-            if self.r.status_code == 200:
-                return self.modeltype
+            self.response= requests.post(url=endpoint, json=selected_model)
+            print(self.response.status_code, self.modeltype)
+            if self.response.status_code == 200:
+                active_model = self.modeltype
             else:
-                return ""
-        except requests.exceptions.RequestException as e:
-            print("No connection to ml server")
-            return ""
+                active_model = "Error"
+        except requests.exceptions.RequestException as error_type:
+            print("No connection to ml server", error_type)
+            active_model = "Error"
+        return active_model
 
 
     def run_server(self):
         """Runs the Machine learning server provided by nordaxon"""
         sub_args = [sys.executable, 'src/main.py']
-        self.p = subprocess.Popen(sub_args,
+        self.serverprocess = subprocess.Popen(sub_args,
                                   stdin=subprocess.PIPE,
                                   stdout=subprocess.PIPE,
                                   creationflags=subprocess.CREATE_NEW_CONSOLE,
@@ -68,7 +71,7 @@ class MLModel():
         if process != "":
             subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=process))
         else:
-            subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=self.p.pid))
+            subprocess.Popen("TASKKILL /F /PID {pid} /T".format(pid=self.serverprocess.pid))
 
 
 class MLTextGenerator(MLModel):
@@ -109,20 +112,20 @@ class MLTextGenerator(MLModel):
                     "context": text,
                     "result": "ConnectionError"}
         try:
-            self.r = requests.post(url=endpoint, json=context)
+            self.response= requests.post(url=endpoint, json=context)
             self._clean_text_gen()
-            #self.out["result"] = self.r.text.split(":")[1][:-1]
-            self.out["result"] = self.r.text
+            #self.out["result"] = self.response.text.split(":")[1][:-1]
+            self.out["result"] = self.response.text
 
-        except requests.exceptions.RequestException as e:
-            print("No connection to ml server")
+        except requests.exceptions.RequestException as error_type:
+            print("No connection to ml server", error_type)
         return self.out
 
     def _clean_text_gen(self):
 
         """Cleans api result from linebreaks and double spaces
         """
-        modify = self.r.text.strip()
+        modify = self.response.text.strip()
         newmodify = modify
         print("garbage cleaner!!!!")
         self.text = newmodify
@@ -168,12 +171,12 @@ class MLSentimentAnalysis(MLModel):
                     "result": "ConnectionError",
                     "score": ""}
         try:
-            self.r = requests.post(url=endpoint, json=context)
-            result = dict(self.r.json())
+            self.response= requests.post(url=endpoint, json=context)
+            result = dict(self.response.json())
             self.out["result"] = result["sentiment_label"]
             self.out["score"] = result["score"]
-        except requests.exceptions.RequestException as e:
-            print("No connection to ml server")
+        except requests.exceptions.RequestException as errortype:
+            print("No connection to ml server", errortype)
 
         return self.out
 
@@ -208,12 +211,12 @@ class MLImageClassifier(MLModel):
             new_classes (dict): new classes in the format
             {"class_1 : "", "class_2" : "", "class_3" : ""}
         """
-        r_class = requests.put(url=self.app + "/change_classes/",
-                               json=new_classes)
+        requests.put(url=self.app + "/change_classes/",
+                     json=new_classes)
 
     def classify_image(self,
                        file: bytes,
-                       classes: dict = {},
+                       classes: dict = None,
                        name: str = "") -> dict:
         """Classifies image to provided or default classes.
 
@@ -225,7 +228,7 @@ class MLImageClassifier(MLModel):
         Returns:
             dict: date, modeltype, result, image in a dictionary
         """
-        if classes != {}:
+        if classes is not None:
             self._change_classes(classes)
         files = {'file': file}
         self.out = {"date": str(datetime.now()),
@@ -234,10 +237,10 @@ class MLImageClassifier(MLModel):
                     "result": "ConnectionError",
                     "image": file}
         try:
-            self.r = requests.post(url=self.endpoint, files=files)
-            self.out["result"] = self.r.text
-        except requests.exceptions.RequestException as e:
-            print("No connection to ml server")
+            self.response= requests.post(url=self.endpoint, files=files)
+            self.out["result"] = self.response.text
+        except requests.exceptions.RequestException as errortype:
+            print("No connection to ml server", errortype)
         return self.out
 
 
@@ -260,7 +263,6 @@ class MLQA(MLModel):
             app (str, optional): Machine learning server adress.
                                  Defaults to "http://localhost:8000".
         """
-        super().__
         self.endpoint = (app + "/question_answering/")
         super().__init__(modeltype=modeltype, app=app)
 
@@ -289,17 +291,17 @@ class MLQA(MLModel):
                     "score": "",
                     "question": question}
         try:
-            self.r = requests.post(url=endpoint, json=context_question)
-            self.out["result"] = self.r.text.split(":")[1][:-8]
-            self.out["score"] = self.r.text.split(":")[-1][:-1]
-        except requests.exceptions.RequestException as e:
-            print("No connection to ml server")
+            self.response= requests.post(url=endpoint, json=context_question)
+            self.out["result"] = self.response.text.split(":")[1][:-8]
+            self.out["score"] = self.response.text.split(":")[-1][:-1]
+        except requests.exceptions.RequestException as errortype:
+            print("No connection to ml server", errortype)
         return self.out
 
 
 def _text_generator_to_db(cursor: sqlite3.Cursor,
                           database_connection: sqlite3.Connection,
-                          input: dict):
+                          user_input: dict):
     text_generator_table_create_command = """CREATE TABLE IF NOT EXISTS text_generator(
                                              id INTEGER PRIMARY KEY,
                                              date TEXT NOT NULL,
@@ -310,7 +312,7 @@ def _text_generator_to_db(cursor: sqlite3.Cursor,
 
     cursor.execute(text_generator_table_create_command)
     # text_generator data tuple values [date, context, result]
-    data_tuple = (input["date"], input["context"], input["result"])
+    data_tuple = (user_input["date"], user_input["context"], user_input["result"])
     cursor.execute(text_generator_insert_query, data_tuple)
     database_connection.commit()
     cursor.close()
@@ -318,7 +320,7 @@ def _text_generator_to_db(cursor: sqlite3.Cursor,
 
 def _image_classifier_to_db(cursor: sqlite3.Cursor,
                             database_connection: sqlite3.Connection,
-                            input: dict):
+                            user_input: dict):
     image_classifier_table_create_command = """CREATE TABLE IF NOT EXISTS image_classifier(
                                                id INTEGER PRIMARY KEY,
                                                date TEXT NOT NULL,
@@ -330,10 +332,10 @@ def _image_classifier_to_db(cursor: sqlite3.Cursor,
     cursor.execute(image_classifier_table_create_command)
     # image_classifier data tuple values
     # [date, filename, result, image]
-    data_tuple = (input["date"],
-                  input["filename"],
-                  input["result"],
-                  input["image"])
+    data_tuple = (user_input["date"],
+                  user_input["filename"],
+                  user_input["result"],
+                  user_input["image"])
     cursor.execute(image_classifier_insert_query, data_tuple)
     database_connection.commit()
     cursor.close()
@@ -341,7 +343,7 @@ def _image_classifier_to_db(cursor: sqlite3.Cursor,
 
 def _sentiment_analysis_to_db(cursor: sqlite3.Cursor,
                               database_connection: sqlite3.Connection,
-                              input: dict):
+                              user_input: dict):
     sentiment_analysis_table_create_command = """CREATE TABLE IF NOT EXISTS sentiment_analysis(
                                                  id INTEGER PRIMARY KEY,
                                                  date TEXT NOT NULL,
@@ -353,10 +355,10 @@ def _sentiment_analysis_to_db(cursor: sqlite3.Cursor,
     cursor.execute(sentiment_analysis_table_create_command)
     # sentiment_analysis data tuple values
     # [date, context, result, score]
-    data_tuple = (input["date"],
-                  input["context"],
-                  input["result"],
-                  input["score"])
+    data_tuple = (user_input["date"],
+                  user_input["context"],
+                  user_input["result"],
+                  user_input["score"])
     cursor.execute(sentiment_analysis_insert_query, data_tuple)
     database_connection.commit()
     cursor.close()
@@ -364,7 +366,7 @@ def _sentiment_analysis_to_db(cursor: sqlite3.Cursor,
 
 def _question_answering_to_db(cursor: sqlite3.Cursor,
                               database_connection: sqlite3.Connection,
-                              input: dict):
+                              user_input: dict):
 
     question_answering_table_create_command = """CREATE TABLE IF NOT EXISTS question_answering(
                                                  id INTEGER PRIMARY KEY,
@@ -374,43 +376,46 @@ def _question_answering_to_db(cursor: sqlite3.Cursor,
                                                  score TEXT NOT NULL,
                                                  question TEXT NOT NULL)"""
     question_answering_insert_query = """INSERT INTO question_answering
-                                    (date, context, result, score, question) VALUES (?, ?, ?, ?, ?)"""
+                                      (date,
+                                       context,
+                                       result,
+                                       score,
+                                       question) VALUES (?, ?, ?, ?, ?)"""
 
     cursor.execute(question_answering_table_create_command)
     # question_answering data tuple values
     # [date, context, result, score, question]
-    data_tuple = (input["date"],
-                  input["context"],
-                  input["result"],
-                  input["score"],
-                  input["question"])
+    data_tuple = (user_input["date"],
+                  user_input["context"],
+                  user_input["result"],
+                  user_input["score"],
+                  user_input["question"])
     cursor.execute(question_answering_insert_query, data_tuple)
     database_connection.commit()
     cursor.close()
 
 
-def write_to_db(input: dict):
+def write_to_db(user_input: dict):
 
     default_db_name = "main_database.db"
-    data_tuple = None
-    print(input['modeltype'])
+    print(user_input['modeltype'])
 
     try:
         database_connection = sqlite3.connect(default_db_name)
         cursor = database_connection.cursor()
         print("Connected to SQLite")
 
-        if(input['modeltype'] == "text_generator"):
-            _text_generator_to_db(cursor, database_connection, input)
+        if user_input['modeltype'] == "text_generator":
+            _text_generator_to_db(cursor, database_connection, user_input)
 
-        elif(input['modeltype'] == "sentiment_analysis"):
-            _sentiment_analysis_to_db(cursor, database_connection, input)
+        elif user_input['modeltype'] == "sentiment_analysis":
+            _sentiment_analysis_to_db(cursor, database_connection, user_input)
 
-        elif(input['modeltype'] == "image_classifier"):
-            _image_classifier_to_db(cursor, database_connection, input)
+        elif user_input['modeltype'] == "image_classifier":
+            _image_classifier_to_db(cursor, database_connection, user_input)
 
-        elif(input['modeltype'] == "question_answering"):
-            _question_answering_to_db(cursor, database_connection, input)
+        elif user_input['modeltype'] == "question_answering":
+            _question_answering_to_db(cursor, database_connection, user_input)
 
         else:
             print("Error! Not a valid model type.")
@@ -426,30 +431,36 @@ def write_to_db(input: dict):
 
 def view_db_log(model:str):
     default_db_name = "main_database.db"
-    db = sqlite3.connect(default_db_name)
-    df = None
+    database = sqlite3.connect(default_db_name)
     try:
-        if(model == "text_generator"):
-            df = pd.read_sql("SELECT * FROM text_generator", db)
+        if model == "text_generator":
+            df_database = pd.read_sql("SELECT * FROM text_generator", database)
 
-        elif(model == "sentiment_analysis"):
-            df = pd.read_sql("SELECT * FROM sentiment_analysis", db)
+        elif model == "sentiment_analysis":
+            df_database = pd.read_sql("SELECT * FROM sentiment_analysis", database)
 
-        elif(model == "image_classifier"):
-            df = pd.read_sql("SELECT * FROM image_classifier", db)
+        elif model == "image_classifier":
+            df_database = pd.read_sql("SELECT * FROM image_classifier", database)
 
-        elif(model == "question_answering"):
-            df = pd.read_sql("SELECT * FROM question_answering", db)
+        elif model == "question_answering" :
+            df_database = pd.read_sql("SELECT * FROM question_answering", database)
         else:
             print("Error! Not a valid model type.")
     except pd.io.sql.DatabaseError as error:
         print("Database was not found!", error)
     finally:
-        db.close()
-        st.write(df)
+        database.close()
+        st.write(df_database)
 
 
-def body_sidebar():
+def body_sidebar() -> str:
+    """Streamlit page for the sidebar
+    starts Machine learning server.
+    Chooses what machine learning model to use.
+
+    Returns:
+        str: selected_ml_model what model is chosen in the selector
+    """
     if 'running_model' not in st.session_state:
         st.session_state['running_model'] = ""
     if 'server_pid' not in st.session_state:
@@ -462,7 +473,7 @@ def body_sidebar():
     if btn_start_ml:
         if st.session_state['server_pid'] == 0:
             ml_server.run_server()
-            st.session_state['server_pid'] = ml_server.p.pid
+            st.session_state['server_pid'] = ml_server.serverprocess.pid
     if btn_stop_ml:
         if st.session_state['server_pid'] != 0:
             ml_server.stop_server(st.session_state['server_pid'])
@@ -477,6 +488,11 @@ def body_sidebar():
     return selected_ml_model
 
 def body_image_classifier():
+    """Streamlit page for image classifier
+       tries to classify a picture between 3 different
+       classes. Either default or provided by user.
+       also acesses database for using historical queries
+    """
     image_classifier = MLImageClassifier()
     classify = False
     if 'image_classes' not in st.session_state:
@@ -509,14 +525,14 @@ def body_image_classifier():
             btn_classify_table = st.form_submit_button("Run Regeneration")
 
         if btn_update_log:
-            db = sqlite3.connect("main_database.db")
-            df = pd.read_sql("SELECT * FROM image_classifier", db)
-            db.close()
-            st.write(df)
+            database = sqlite3.connect("main_database.db")
+            df_database = pd.read_sql("SELECT * FROM image_classifier", database)
+            database.close()
+            st.write(df_database)
 
         if btn_classify_table:
-            db = sqlite3.connect("main_database.db")
-            cur = db.cursor()
+            database = sqlite3.connect("main_database.db")
+            cur = database.cursor()
             cur.execute(f'''SELECT image,filename
                             FROM image_classifier
                             WHERE id == '{regenerate_id}' ''')
@@ -524,7 +540,7 @@ def body_image_classifier():
             if file != []:
                 upload = file[0][0]
                 classify = True
-                db.close()
+                database.close()
             else:
                 st.write("Database index out of range")
 
@@ -541,7 +557,7 @@ def body_image_classifier():
                                                                 st.session_state["image_classes"],
                                                                 file[0][1])
                     write_to_db(out)
-                    result_dict = dict(image_classifier.r.json())
+                    result_dict = dict(image_classifier.response.json())
                     best_match = sorted(result_dict, key=result_dict.get, reverse=True)[0]
                     st.text(f"From the classes the best match is: {best_match.capitalize()}")
                     st.text(f"with a probability of {round(float(result_dict[best_match])*100,1)}%")
@@ -551,6 +567,10 @@ def body_image_classifier():
             st.image(upload)
 
 def body_text_generator():
+    """Streamlit page for text generator
+       takes a text and tries to continue on it
+       also acesses database for using historical queries
+    """
     text_generator = MLTextGenerator()
     st.header("text generator")
     if st.session_state['running_model'] != "text_generator":
@@ -568,15 +588,15 @@ def body_text_generator():
     if text_generator_button:
         user_result = text_generator.get_text_gen(user_input)
         write_to_db(user_result)
-        text_generator.r.json()
-        duser_result = dict(text_generator.r.json())
+        text_generator.response.json()
+        duser_result = dict(text_generator.response.json())
 
         st.write(duser_result["generated_text"])
     if text_logger_button:
-        db = sqlite3.connect("main_database.db")
-        df = pd.read_sql("SELECT * FROM text_generator", db)
-        db.close()
-        st.write(df)
+        database = sqlite3.connect("main_database.db")
+        df_database = pd.read_sql("SELECT * FROM text_generator", database)
+        database.close()
+        st.write(df_database)
     if retreive_from_log:
         st.write("This functions is not working yet!")
 
@@ -585,6 +605,10 @@ def body_text_generator():
 
 
 def body_sentiment_analysis():
+    """Streamlit page for sentiment analysis
+       takes a string and analyses its sentiment
+       also acesses database for using historical queries
+    """
     sentiment_analysis = MLSentimentAnalysis()
     st.header("Sentiment analysis")
     if st.session_state['running_model'] != "sentiment_analysis":
@@ -596,4 +620,9 @@ def body_sentiment_analysis():
         write_to_db(user_result)
 
 def body_question_answering():
-    question_answering = MLQA
+    """Streamlit page for question answering
+       takes a string and analyses its sentiment
+       also acesses database for using historical queries
+    """
+    # question_answering = MLQA
+    pass
