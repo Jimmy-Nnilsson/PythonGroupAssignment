@@ -396,7 +396,11 @@ def _question_answering_to_db(cursor: sqlite3.Cursor,
 
 
 def write_to_db(user_input: dict):
+    """Writes information to the sql database
 
+    Args:
+        user_input (dict): Output from the machine learning classes
+    """
     default_db_name = "main_database.db"
     print(user_input['modeltype'])
 
@@ -429,7 +433,12 @@ def write_to_db(user_input: dict):
             print("SQLite connection is closed")
 
 
-def view_db_log(model:str):
+def view_db_log(model: str):
+    """Creates view of current model table from the sql database
+
+    Args:
+        model (str): chosses model to view
+    """
     default_db_name = "main_database.db"
     database = sqlite3.connect(default_db_name)
     try:
@@ -473,7 +482,7 @@ def get_id_db_log(columns: str, rowid: str, model: str) -> list:
     df_database = cur.fetchall()
 
     database.close()
-    return(df_database)
+    return df_database
 
 
 def body_sidebar() -> str:
@@ -510,6 +519,22 @@ def body_sidebar() -> str:
                                             "image_classifier"])
     return selected_ml_model
 
+
+def body_image_class():
+    """Streamlit page function for changing imageclasses
+       for image classifier
+    """
+    with st.expander("Image classes"):
+        with st.form("ML Classes"):
+            image_class1 = st.text_input("Image Class 1: ")
+            image_class2 = st.text_input("Image Class 2: ")
+            image_class3 = st.text_input("Image Class 3: ")
+            submit_classes = st.form_submit_button("Submit Classes")
+    if submit_classes:
+        st.session_state["image_classes"] = {"class_1": image_class1,
+                                             "class_2": image_class2,
+                                             "class_3": image_class3}
+
 def body_image_classifier():
     """Streamlit page for image classifier
        tries to classify a picture between 3 different
@@ -527,16 +552,8 @@ def body_image_classifier():
     col1, col2 = st.columns([10, 10])
     with col1:
         st.header("Image Classifier")
-        with st.expander("Image classes"):
-            with st.form("ML Classes"):
-                image_class1 = st.text_input("Image Class 1: ")
-                image_class2 = st.text_input("Image Class 2: ")
-                image_class3 = st.text_input("Image Class 3: ")
-                submit_classes = st.form_submit_button("Submit Classes")
-        if submit_classes:
-            st.session_state["image_classes"] = {"class_1": image_class1,
-                                                    "class_2": image_class2,
-                                                    "class_3": image_class3}
+
+        body_image_class()
 
         upload = st.file_uploader("Image", type=[".jpg", ".jpeg", '.png'])
         btn_classify = st.button("Classify Image")
@@ -561,23 +578,22 @@ def body_image_classifier():
                 st.write("Database index out of range")
 
         with container:
-            if btn_classify or classify:
-                if upload is not None:
-                    if btn_classify:
-                        file = upload.getvalue()
-                        out = image_classifier.classify_image(file,
-                                                                st.session_state["image_classes"],
-                                                                upload.name)
-                    elif classify:
-                        out = image_classifier.classify_image(upload,
-                                                                st.session_state["image_classes"],
-                                                                file[0][1])
-                    write_to_db(out)
-                    result_dict = dict(image_classifier.response.json())
-                    best_match = sorted(result_dict, key=result_dict.get, reverse=True)[0]
-                    st.text(f"From the classes the best match is: {best_match.capitalize()}")
-                    st.text(f"with a probability of {round(float(result_dict[best_match])*100,1)}%")
-                    classify = False
+            if (btn_classify or classify) and upload is not None:
+                if btn_classify:
+                    file = upload.getvalue()
+                    out = image_classifier.classify_image(file,
+                                                            st.session_state["image_classes"],
+                                                            upload.name)
+                elif classify:
+                    out = image_classifier.classify_image(upload,
+                                                            st.session_state["image_classes"],
+                                                            file[0][1])
+                write_to_db(out)
+                result_dict = dict(image_classifier.response.json())
+                best_match = sorted(result_dict, key=result_dict.get, reverse=True)[0]
+                st.text(f"From the classes the best match is: {best_match.capitalize()}")
+                st.text(f"with a probability of {round(float(result_dict[best_match])*100,1)}%")
+                classify = False
     with col2:
         if upload is not None:
             st.image(upload)
