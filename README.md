@@ -92,7 +92,12 @@ The webpages is basicly divided in to two areas.
 - Input field "Enter ID" is to rerun previously inputed data without submiting it again
 - Button "submit" displays the result
 - 
-
+### Text Generator
+- Input field "Enter text you want to generate full sentence or text"
+- Button "Generate" returns the generated text and saves the result in database
+- Expander "Show logs" Shows data of previously generated and resault
+- Input field "provide index number from logs for retrieveing value"
+- Button "Retrieve" retrieves generated text from DB
 
 # Installed packages
 - Python=3.9
