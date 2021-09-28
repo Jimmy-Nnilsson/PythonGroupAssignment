@@ -4,13 +4,6 @@ Store the results in a database for reuse
 """
 import streamlit as st
 import utilities
-#from utilities import *
-
-# #Remove comment to enable debug in VScode though ptvsd is needed through pip install
-# import ptvsd
-# print("Waiting for debugger attach")
-# ptvsd.enable_attach(address=("localhost", 5678), redirect_output=True)
-# ptvsd.wait_for_attach()
 
 def main():
     """Main module
