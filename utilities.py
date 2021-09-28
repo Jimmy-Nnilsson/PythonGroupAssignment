@@ -1,12 +1,15 @@
 """Help classes and functions for group2 streamlit ml app
 """
+from sqlite3.dbapi2 import connect
 import sys
 import subprocess
 import sqlite3
-from datetime import datetime
+from datetime import datetime, time
+from numpy import empty
 import requests
 import streamlit as st
 import pandas as pd
+import time
 
 
 class MLModel():
@@ -607,34 +610,39 @@ def body_text_generator():
     st.header("text generator")
     if st.session_state['running_model'] != "text_generator":
         st.session_state['running_model'] = text_generator.start()
-    user_input = st.text_input("Enter text you program to generate further text on")
 
-    col1, col2, col3 = st.columns(3)
+    st.write("Here you can add any word or sentence and get it generated further")
+    trash = st.empty()
+    col1, col3 = st.columns(2)
+
     with col1:
+        user_input = st.text_input("")
         text_generator_button = st.button("Generate")
-    with col2:
-        text_logger_button = st.button("Show log")
-    with col3:
-        retreive_from_log = st.button("retrieve")
+    my_expander = st.expander(label="Show logs", expanded=False)
+        
+    with my_expander:
+        database = sqlite3.connect("main_database.db")
+        database.commit()
+        df_database = pd.read_sql("SELECT * FROM text_generator", database)
+        df_database = df_database.set_index("id")
+        database.close()
+        st.dataframe(df_database)
+        update_log_button = st.button("Update")
+    
+    if update_log_button:
+        database = sqlite3.connect("main_database.db")
+        database.commit()
+        df_database = pd.read_sql("SELECT * FROM text_generator", database)
+        df_database = df_database.set_index("id")
+        database.close()
 
     if text_generator_button:
         user_result = text_generator.get_text_gen(user_input)
         write_to_db(user_result)
         text_generator.response.json()
         duser_result = dict(text_generator.response.json())
-
+        st.success('Sucessfully generated text')
         st.write(duser_result["generated_text"])
-    if text_logger_button:
-
-        database = sqlite3.connect("main_database.db")
-        df_database = pd.read_sql("SELECT * FROM text_generator", database)
-        database.close()
-        st.write(df_database)
-    if retreive_from_log:
-        st.write("This functions is not working yet!")
-
-    else:
-        st.write("Database index out of range")
 
 
 def body_sentiment_analysis():
