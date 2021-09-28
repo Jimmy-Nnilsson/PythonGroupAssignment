@@ -85,6 +85,14 @@ The webpages is basicly divided in to two areas.
 - Input field "Input Id to classify" chooses what picture to classify again
 - Button "Classify Table" classifies the picture connected to the chosen id from "Input Id to classify"
 
+### Sentiment analysis
+- Input field "Enter text you want to analyse" chooses what text to analyse
+- Button "submit" returns score and saves the result in database
+- Button "Click here to view data" shows previous results from the database
+- Input field "Enter ID" is to rerun previously inputed data without submiting it again
+- Button "submit" displays the result
+- 
+
 
 # Installed packages
 - Python=3.9
