@@ -9,7 +9,6 @@ from numpy import empty
 import requests
 import streamlit as st
 import pandas as pd
-import time
 
 
 class MLModel():
