@@ -603,7 +603,6 @@ def body_image_classifier():
             best_match = sorted(result_dict, key=result_dict.get, reverse=True)[0]
             st.text(f"From the classes the best match is: {best_match.capitalize()}")
             st.text(f"with a probability of {round(float(result_dict[best_match])*100,1)}%")
-            # classes_string = str(result_dict.keys())
             st.text(f"From the classes: {str(result_dict.keys())[12:-2]}")
     with col2:
         if upload is not None:
@@ -620,29 +619,25 @@ def body_text_generator():
         st.session_state['running_model'] = text_generator.start()
 
     st.write("Here you can add any word or sentence and get it generated further")
-    trash = st.empty()
-    col1, col3 = st.columns(2)
 
-    with col1:
-        user_input = st.text_input("")
-        text_generator_button = st.button("Generate")
+    user_input = st.text_input("")
+    text_generator_button = st.button("Generate")
     my_expander = st.expander(label="Show logs", expanded=False)
 
     with my_expander:
-        database = sqlite3.connect("main_database.db")
-        database.commit()
-        df_database = pd.read_sql("SELECT * FROM text_generator", database)
-        df_database = df_database.set_index("id")
-        database.close()
-        st.dataframe(df_database)
+        view_db_log("text_generator")
         update_log_button = st.button("Update")
+        user_retrieve = st.text_input(" ", "Provide index number")
+        user_retrieve_button = st.button("Retrieve")
 
-    if update_log_button:
-        database = sqlite3.connect("main_database.db")
-        database.commit()
-        df_database = pd.read_sql("SELECT * FROM text_generator", database)
-        df_database = df_database.set_index("id")
-        database.close()
+        if update_log_button:
+            database = sqlite3.connect("main_database.db")
+            database.commit()
+            database.close()
+        if user_retrieve_button:
+            retrieved_value = get_id_db_log("result", user_retrieve, "text_generator")
+            retrieved_value = json.loads(retrieved_value[0][0])
+            st.write(retrieved_value["generated_text"])
 
     if text_generator_button:
         user_result = text_generator.get_text_gen(user_input)
