@@ -653,13 +653,22 @@ def body_sentiment_analysis():
     st.header("Sentiment analysis")
     if st.session_state['running_model'] != "sentiment_analysis":
         st.session_state['running_model'] = sentiment_analysis.start()
-    user_input = st.text_input("Enter text you want to analyse")
+        with st.form(key='Get data'):
+        user_input = st.text_input(label='Enter text you want to analyse')
+        submit_button_2 = st.form_submit_button(label='Submit')
+    if submit_button_2:
+        user_result = sentiment_analysis.analyse_sentiment(str(user_input))
+        st.write(str(round(user_result["score"] * 100, 1)) + "%", user_result["result"])
+        write_to_db(user_result)
     if st.button("Click here to view data"):
         view_db_log("sentiment_analysis")
-    if user_input:
-        user_result = sentiment_analysis.analyse_sentiment(str(user_input))
-        st.write(str(round(user_result["score"]*100,1)) + "%", user_result["result"])
-        write_to_db(user_result)
+    with st.form(key='Get data by ID'):
+        user_id_input = st.text_input(label='Enter ID')
+        submit_button = st.form_submit_button(label='Submit')
+    if submit_button:
+        df = get_id_db_log("context", user_id_input, "sentiment_analysis")
+        user_result = sentiment_analysis.analyse_sentiment(str(df[0]))
+        st.write(str(round(user_result["score"] * 100, 1)) + "%", user_result["result"])
 
 def body_question_answering():
     """Streamlit page for question answering
