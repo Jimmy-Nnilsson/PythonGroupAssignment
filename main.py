@@ -2,7 +2,6 @@
 Use api to connect to machine learning models.
 Store the results in a database for reuse
 """
-import streamlit as st
 import utilities
 
 def main():
@@ -21,8 +20,5 @@ def main():
 
 
 if __name__ == "__main__":
-    st.set_page_config(page_title="Group 2 ML interactor",
-                        page_icon=None,
-                        layout='wide',
-                        initial_sidebar_state='auto')
+
     main()

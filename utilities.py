@@ -494,6 +494,11 @@ def body_sidebar() -> str:
     Returns:
         str: selected_ml_model what model is chosen in the selector
     """
+    st.set_page_config(page_title="Group 2 ML interactor",
+                        page_icon=None,
+                        layout='wide',
+                        initial_sidebar_state='auto')
+
     if 'running_model' not in st.session_state:
         st.session_state['running_model'] = ""
     if 'server_pid' not in st.session_state:
