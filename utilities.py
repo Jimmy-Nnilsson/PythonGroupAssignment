@@ -9,7 +9,7 @@ from numpy import empty
 import requests
 import streamlit as st
 import pandas as pd
-
+import json
 
 class MLModel():
     """Machine learning superclass starts server and activates chosen ml model
@@ -561,40 +561,51 @@ def body_image_classifier():
         btn_classify = st.button("Classify Image")
         container = st.container()
 
-        with st.form("Forms with things"):
-            btn_update_log = st.form_submit_button("Update Log")
-            regenerate_id = st.text_input("Input Id to classify")
+    with st.form("Forms with things"):
+        btn_update_log = st.form_submit_button("Update Log")
+        regenerate_id = st.text_input("Input Id to classify")
+        col3, col4 = st.columns(2)
+        with col3:
             btn_classify_table = st.form_submit_button("Classify Table")
+        with col4:
+            btn_show_id = st.form_submit_button("Show result")
 
-        if btn_update_log:
-            view_db_log(st.session_state['running_model'])
+    if btn_update_log:
+        view_db_log("image_classifier")
 
-        if btn_classify_table:
-            file = get_id_db_log("image,filename",
-                                 regenerate_id,
-                                 st.session_state['running_model'])
-            if file != []:
-                upload = file[0][0]
-                classify = True
-            else:
-                st.write("Database index out of range")
+    if btn_classify_table or btn_show_id:
+        file = get_id_db_log("image,filename,result",
+                                regenerate_id,
+                                "image_classifier")
+        if file != []:
+            upload = file[0][0]
+            classify = True if btn_classify_table else False
+            show_id = True if btn_show_id else False
+        else:
+            st.write("Database index out of range")
 
         with container:
-            if (btn_classify or classify) and upload is not None:
+            if (btn_classify or classify or show_id) and upload is not None:
                 if btn_classify:
                     file = upload.getvalue()
                     out = image_classifier.classify_image(file,
                                                             st.session_state["image_classes"],
                                                             upload.name)
+                    write_to_db(out)
+                    result_dict = dict(image_classifier.response.json())
                 elif classify:
                     out = image_classifier.classify_image(upload,
                                                             st.session_state["image_classes"],
                                                             file[0][1])
-                write_to_db(out)
-                result_dict = dict(image_classifier.response.json())
+                    write_to_db(out)
+                    result_dict = dict(image_classifier.response.json())
+                elif show_id:
+                    result_dict = json.loads(file[0][2].replace("'", "\""))
                 best_match = sorted(result_dict, key=result_dict.get, reverse=True)[0]
                 st.text(f"From the classes the best match is: {best_match.capitalize()}")
                 st.text(f"with a probability of {round(float(result_dict[best_match])*100,1)}%")
+                classes_string = str(result_dict.keys())
+                st.text(f"From the classes: {classes_string[12:-2]}")
                 classify = False
     with col2:
         if upload is not None:
@@ -618,7 +629,7 @@ def body_text_generator():
         user_input = st.text_input("")
         text_generator_button = st.button("Generate")
     my_expander = st.expander(label="Show logs", expanded=False)
-        
+
     with my_expander:
         database = sqlite3.connect("main_database.db")
         database.commit()
@@ -627,7 +638,7 @@ def body_text_generator():
         database.close()
         st.dataframe(df_database)
         update_log_button = st.button("Update")
-    
+
     if update_log_button:
         database = sqlite3.connect("main_database.db")
         database.commit()
