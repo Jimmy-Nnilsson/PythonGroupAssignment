@@ -564,7 +564,6 @@ def body_image_classifier():
         container = st.container()
 
     with st.form("Forms with things"):
-        btn_update_log = st.form_submit_button("Update Log")
         regenerate_id = st.text_input("Input Id to classify")
         col3, col4 = st.columns(2)
         with col3:
@@ -572,7 +571,7 @@ def body_image_classifier():
         with col4:
             btn_show_id = st.form_submit_button("Show Old result")
 
-    if btn_update_log:
+    with st.expander("Logged entries",False):
         view_db_log("image_classifier")
 
     if btn_classify_table or btn_show_id:
@@ -604,8 +603,8 @@ def body_image_classifier():
             best_match = sorted(result_dict, key=result_dict.get, reverse=True)[0]
             st.text(f"From the classes the best match is: {best_match.capitalize()}")
             st.text(f"with a probability of {round(float(result_dict[best_match])*100,1)}%")
-            classes_string = str(result_dict.keys())
-            st.text(f"From the classes: {classes_string[12:-2]}")
+            # classes_string = str(result_dict.keys())
+            st.text(f"From the classes: {str(result_dict.keys())[12:-2]}")
     with col2:
         if upload is not None:
             st.image(upload)
