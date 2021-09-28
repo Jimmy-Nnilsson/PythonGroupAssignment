@@ -562,7 +562,7 @@ def body_image_classifier():
         with st.form("Forms with things"):
             btn_update_log = st.form_submit_button("Update Log")
             regenerate_id = st.text_input("Input Id to classify")
-            btn_classify_table = st.form_submit_button("Run Regeneration")
+            btn_classify_table = st.form_submit_button("Classify Table")
 
         if btn_update_log:
             view_db_log(st.session_state['running_model'])
