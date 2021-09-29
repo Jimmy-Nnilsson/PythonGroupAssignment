@@ -402,10 +402,10 @@ def write_to_db(user_input: dict):
     Args:
         user_input (dict): Output from the machine learning classes
     """
-    default_db_name = "main_database.db"
-    print(user_input['modeltype'])
-
     try:
+        default_db_name = "main_database.db"
+        print(user_input['modeltype'])
+
         database_connection = sqlite3.connect(default_db_name)
         cursor = database_connection.cursor()
         print("Connected to SQLite")
@@ -427,6 +427,8 @@ def write_to_db(user_input: dict):
 
     except sqlite3.Error as error:
         print("Failed to insert data into SQLite database", error)
+    except UnboundLocalError as error:
+        print("Database not created yes", error)
 
     finally:
         if database_connection:
@@ -440,9 +442,10 @@ def view_db_log(model: str):
     Args:
         model (str): chosses model to view
     """
-    default_db_name = "main_database.db"
-    database = sqlite3.connect(default_db_name)
     try:
+        default_db_name = "main_database.db"
+        database = sqlite3.connect(default_db_name)
+
         if model == "text_generator":
             df_database = pd.read_sql("SELECT * FROM text_generator", database)
 
@@ -456,12 +459,13 @@ def view_db_log(model: str):
             df_database = pd.read_sql("SELECT * FROM question_answering", database)
         else:
             print("Error! Not a valid model type.")
+        st.write(df_database)
     except pd.io.sql.DatabaseError as error:
         print("Database was not found!", error)
+    except UnboundLocalError as error:
+        print("Database not created yes", error)
     finally:
         database.close()
-        st.write(df_database)
-
 
 def get_id_db_log(columns: str, rowid: str, model: str) -> list:
     """Get an isolated row with selected columns from the model
@@ -475,12 +479,15 @@ def get_id_db_log(columns: str, rowid: str, model: str) -> list:
     Returns:
         list: the row with selected columns
     """
-    default_db_name = "main_database.db"
-    database = sqlite3.connect(default_db_name)
-    cur = database.cursor()
+    try:
+        default_db_name = "main_database.db"
+        database = sqlite3.connect(default_db_name)
+        cur = database.cursor()
 
-    cur.execute(f'''SELECT {columns} FROM {model} WHERE id =='{rowid}' ''')
-    df_database = cur.fetchall()
+        cur.execute(f'''SELECT {columns} FROM {model} WHERE id =='{rowid}' ''')
+        df_database = cur.fetchall()
+    except UnboundLocalError as error:
+        print("Database not created yes", error)
 
     database.close()
     return df_database
