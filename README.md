@@ -81,9 +81,9 @@ The webpages is basicly divided in to two areas.
 - Image
   - Drop an image in the area to upload it to the process
 - Button "Classify Image" starts either to user provided or default classes
-- Button "Update Log" shows the database entries for the current model.
 - Input field "Input Id to classify" chooses what picture to classify again
-- Button "Classify Table" classifies the picture connected to the chosen id from "Input Id to classify"
+- Button "Classify Table Id" classifies the picture connected to the chosen id from "Input Id to classify"
+- Button "Show Old Result" Shows the old result from the classification.
 
 ### Sentiment analysis
 - Input field "Enter text you want to analyse" chooses what text to analyse
@@ -91,8 +91,21 @@ The webpages is basicly divided in to two areas.
 - Button "Click here to view data" shows previous results from the database
 - Input field "Enter ID" is to rerun previously inputed data without submiting it again
 - Button "submit" displays the result
-- 
 
+### Text Generator
+- Input field "Enter text you want to generate full sentence or text"
+- Button "Generate" returns the generated text and saves the result in database
+- Expander "Show logs" Shows data of previously generated and resault
+- Input field "provide index number from logs for retrieveing value"
+- Button "Retrieve" retrieves generated text from DB
+
+### Question Answering
+- Input field "Enter text" you want to generate full sentence or text
+- Input field "Enter Question" you want to generate full sentence or text
+- Button "Submit Question & Text" returns the generated text and saves the result in database
+- Button "Click here to view data" shows the old entries used at the page
+- Input field "Enter Id" Id to get information from again
+- Button "Submit" retrieves old questions and answers from the database
 
 # Installed packages
 - Python=3.9
