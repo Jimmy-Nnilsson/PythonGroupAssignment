@@ -2,17 +2,6 @@
 # Group 2
 ML interaction
 
-### Uppfyllda kriterier
-- Det ska levereras i ett GitHub repository
-  - Det ska finnas en tydlig README för hur man startar appen lokalt på sin dator
-  - Detta innebär att filer som t ex requirements.txt är självklara
-- Användaren ska kunna ladda upp egen data i appen
-  - Den datan ska sedan sparas i databasen så att användaren kan gå tillbaka och välja samma data igen, utan att behöva ladda upp den igen
-- Appen ska interagera med minst en maskininlärningsmodell via ett API
-- Ni ska använda biblioteket Streamlit för att sätta upp en sida som användaren kan interagera via
-- Ni ska använda docstrings, clean coding och i mån av behov även kommentarer i koden – kom ihåg att en annan grupp ska kunna förstå koden!
-- Tips: innan ni lämnar in ert repo, klona ner det i en ny mapp, gör en helt ny conda environment och följ era egna instruktioner - se till att det går att köra!!
-
 ## Start instructions
 - Short version: streamlit run main.py
 - Press "Start ML Model Server"
