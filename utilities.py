@@ -679,5 +679,30 @@ def body_question_answering():
        takes a string and analyses its sentiment
        also acesses database for using historical queries
     """
-    # question_answering = MLQA
+    question_answering = MLQA()
+    st.header("Question Answering")
+    if st.session_state['running_model'] != "question_answering":
+        st.session_state['running_model'] = question_answering.start()
+    with st.form(key='Get data'):
+        user_context = st.text_input(label='Enter text')
+        user_question = st.text_input(label='Enter question')
+        submit_question_context = st.form_submit_button(label='Submit Question & Text')
+    if submit_question_context:
+        user_result = question_answering.question_answering(user_question, user_context)
+        rounded_score = int(float(user_result['score']) * 100+0.5)
+        st.write(f"Answer: {user_result['result']} with {rounded_score}% certainty")
+        write_to_db(user_result)
+    if st.button("Click here to view data"):
+        view_db_log("question_answering")
+    with st.form(key='Get data by ID'):
+        user_id_input = st.text_input(label='Enter ID')
+        submit_button = st.form_submit_button(label='Submit')
+    if submit_button:
+        sql_list = get_id_db_log("context,question,result,score",
+                                  user_id_input,
+                                  "question_answering")
+        st.write(f"Text: {sql_list[0][0]}")
+        st.write(f"Question: {sql_list[0][1]}")
+        rounded_score = int(float(sql_list[0][3]) * 100+0.5)
+        st.write(f"Answer: {sql_list[0][2]} with {rounded_score}% certainty")
     pass
