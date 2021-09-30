@@ -139,7 +139,7 @@ class MLSentimentAnalysis(MLModel):
             run_server : from super class
             st_stop_Server : from super class
 
-            analyes_sentiment
+            analyse_sentiment
     """
     def __init__(self, modeltype: str = "sentiment_analysis",
                  app: str = "http://localhost:8000") -> None:
